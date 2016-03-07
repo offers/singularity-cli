@@ -1,40 +1,31 @@
 #!/usr/bin/env ruby
 require 'singularity'
-require 'restclient'
 
 # passes "--help" if no arguments given which will result in the "else" case statement being executed, printing proper usage
 ARGV << '--help' if ARGV.empty?
 
-# must be ARGV.shift for the other .shifts in the case statement to align correctly
-action = ARGV.shift
+def print_usage
+  puts "Usage:\n\tsingularity delete <uri> <file>\n\tsingularity deploy <uri> <file> <release>"
+  exit
+end
 
-case $action
-    when "delete"
-        unless ARGV.size == 2
-            puts "Usage: singularity delete <file>"
-            exit
-        end
-        task_id = ARGV.shift.gsub(/\.\/singularity\//, "").gsub(/\.json/, "")
-        begin
-          # delete the request
-          RestClient.delete "http://singularity.starfleet/singularity/api/requests/request/#{task_id}"
-          puts "#{task_id} DELETED"
-        rescue
-          puts "#{task_id} #{$!.response}"
-        end
+action = ARGV[0]
+uri = ARGV[1]
+file = ARGV[2]
 
-    when "deploy"
-        unless ARGV.size == 3
-            puts "Usage: singularity deploy <uri> <release>"
-            exit
-        end
-        Singularity::Deployer.new(ARGV.shift, ARGV.shift).deploy
+case action
 
-    else
-        puts "Usage:"
-        puts "    singularity delete <file>"
-        puts "    singularity deploy <uri> <release>" 
-        exit
+  when "delete"
+    print_usage unless ARGV.size == 3
+    Singularity::Deleter.new(uri,file).delete
+
+  when "deploy"
+    print_usage unless ARGV.size == 4
+    release = ARGV[3]
+    Singularity::Deployer.new(uri,file,release).deploy
+
+  else
+      print_usage
 end
 
 

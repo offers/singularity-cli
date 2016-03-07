@@ -1,6 +1,6 @@
 require 'erb'
-require 'restclient'
 require 'json'
+require 'rest-client'
 require 'colorize'
 
 module Singularity
@@ -14,7 +14,8 @@ module Singularity
 
   class Deployer
 
-    def initialize(file, release)
+    def initialize(uri, file, release)
+      @uri = uri
       @file = file
       @release = release
       @config = ERB.new(open(file).read)
@@ -27,7 +28,7 @@ module Singularity
 
     def is_paused
       begin
-        resp = RestClient.get "http://singularity.starfleet/singularity/api/requests/request/#{@data['id']}"
+        resp = RestClient.get "#{@uri}/api/requests/request/#{@data['id']}"
         JSON.parse(resp)['state'] == 'PAUSED'
       rescue
         print " CREATING...".blue
@@ -35,7 +36,7 @@ module Singularity
       end
     end
 
-
+    # Deployer.deploy -- arguments are <uri>, <release>
     def deploy
       begin
         if is_paused()
@@ -43,7 +44,7 @@ module Singularity
           exit
         else
           # create or update the request
-          resp = RestClient.post "http://singularity.starfleet/singularity/api/requests", @data.to_json, :content_type => :json
+          resp = RestClient.post "#{@uri}/api/requests", @data.to_json, :content_type => :json
         end
         
         # deploy the request
@@ -55,7 +56,7 @@ module Singularity
          'unpauseOnSuccessfulDeploy' => false
         }
 
-        resp = RestClient.post "http://singularity.starfleet/singularity/api/deploys", deploy.to_json, :content_type => :json
+        resp = RestClient.post "#{@uri}/api/deploys", deploy.to_json, :content_type => :json
 
         puts " DEPLOYED".green
       rescue Exception => e
@@ -63,4 +64,25 @@ module Singularity
       end
     end
   end
+
+  class Deleter
+
+    def initialize(uri, file)
+      @uri = uri
+      @file = file
+    end
+
+    # Deleter.delete -- arguments are <uri>, <file>
+    def delete
+      begin
+        task_id = "#{@file}".gsub(/\.\/singularity\//, "").gsub(/\.json/, "")
+        # delete the request
+        RestClient.delete "#{@uri}/api/requests/request/#{task_id}"
+        puts "#{task_id} DELETED"
+      rescue
+        puts "#{task_id} #{$!.response}"
+      end
+    end
+  end 
+
 end
