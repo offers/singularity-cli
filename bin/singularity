@@ -1,0 +1,32 @@
+#!/usr/bin/env ruby
+require 'singularity'
+
+# passes "--help" if no arguments given which will result in the "else" case statement being executed, printing proper usage
+ARGV << '--help' if ARGV.empty?
+
+def print_usage
+  puts "Usage:\n\tsingularity delete <uri> <file>\n\tsingularity deploy <uri> <file> <release>"
+  exit
+end
+
+action = ARGV[0]
+uri = ARGV[1]
+file = ARGV[2]
+
+case action
+
+  when "delete"
+    print_usage unless ARGV.size == 3
+    Singularity::Deleter.new(uri,file).delete
+
+  when "deploy"
+    print_usage unless ARGV.size == 4
+    release = ARGV[3]
+    Singularity::Deployer.new(uri,file,release).deploy
+
+  else
+      print_usage
+end
+
+
+
