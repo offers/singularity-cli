@@ -36,7 +36,6 @@ module Singularity
       end
     end
 
-    # Deployer.deploy -- arguments are <uri>, <release>
     def deploy
       begin
         if is_paused()
