@@ -1,5 +1,7 @@
 # singularity-cli
-Author: travis.webb@offers.com & chris.kite@offers.com
-#Usage:
+Authors: 
+    @traviswdev
+    @chriskite
+# Usage:
     singularity delete <uri> <file>
     singularity deploy <uri> <file> <release>
