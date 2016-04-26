@@ -40,7 +40,7 @@ module Singularity
       begin
         if is_paused()
           puts " PAUSED, SKIPPING".yellow
-          exit
+          return
         else
           # create or update the request
           resp = RestClient.post "#{@uri}/api/requests", @data.to_json, :content_type => :json
