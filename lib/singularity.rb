@@ -78,9 +78,10 @@ module Singularity
   end 
 
   class Runner
-    def initialize(uri, file)
+    def initialize(uri, file, release, script)
       @uri = uri
       @file = file
+      @script = ERB.new(open(script).read)
       @config = ERB.new(open(file).read)
       @r = Request.new
       @r.release = @release
@@ -94,18 +95,21 @@ module Singularity
           return
         else
           # create or update the request
-          # resp = RestClient.post "#{@uri}/api/requests", @data.to_json, :content_type => :json
+          resp = RestClient.post "#{@uri}/api/requests", @data.to_json, :content_type => :json
         end
         # deploy the request
-        # @data['requestId'] = @data['id']
-        # @data['id'] = "#{@release}.#{Time.now.to_i}"
-        # deploy = {
-        #  'deploy' => @data,
-        #  'user' => `whoami`.chomp,
-        #  'unpauseOnSuccessfulDeploy' => false
-        # }
-        # resp = RestClient.post "#{@uri}/api/deploys", deploy.to_json, :content_type => :json
-        # puts " DEPLOYED".green
+        @data['requestId'] = @data['id']
+        @data['id'] = "#{@release}.#{Time.now.to_i}"
+        deploy = {
+         'deploy' => @data,
+         'user' => `whoami`.chomp,
+         'unpauseOnSuccessfulDeploy' => false
+        }
+        resp = RestClient.post "#{@uri}/api/deploys", deploy.to_json, :content_type => :json
+        
+        puts " Deployed and running #{@script}".green
+        # the line below needs to be changed to call the output from the API and print it to this console
+        puts " Task will exit after script is complete, check #{@uri} for the output."
       rescue Exception => e
         puts " #{e.response}".red
       end

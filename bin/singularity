@@ -5,7 +5,7 @@ require 'singularity'
 ARGV << '--help' if ARGV.empty?
 
 def print_usage
-  puts "Usage:\n\tsingularity delete <uri> <file>\n\tsingularity deploy <uri> <file> <release>\n\tsingularity run <uri> <script/file> <release>"
+  puts "Usage:\n\tsingularity delete <uri> <file.json>\n\tsingularity deploy <uri> <file.json> <release>\n\tsingularity run <uri> <file.json> <release> <script>"
   exit
 end
 
@@ -25,9 +25,10 @@ case action
     Singularity::Deployer.new(uri,file,release).deploy
 
   when "run"
-    print_usage unless ARGV.size == 4
+    print_usage unless ARGV.size == 5
     release = ARGV[3]
-    Singularity::Runner.new(uri,file,release).runner
+    script = ARGV[4]
+    Singularity::Runner.new(uri,file,release,script).runner
     
   else
       print_usage
