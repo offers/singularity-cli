@@ -81,7 +81,7 @@ module Singularity
     def initialize(uri, file, release, script)
       @uri = uri
       @file = file
-      @script = ERB.new(open(script).read)
+      @script = script
       @config = ERB.new(open(file).read)
       @r = Request.new
       @r.release = @release
@@ -95,11 +95,16 @@ module Singularity
           return
         else
           # create or update the request
+          @data['requestType'] = "RUN_ONCE"
           resp = RestClient.post "#{@uri}/api/requests", @data.to_json, :content_type => :json
         end
         # deploy the request
         @data['requestId'] = @data['id']
         @data['id'] = "#{@release}.#{Time.now.to_i}"
+        
+        # put script in commands & arguments line
+        @data['arguments'] = ["--", "#{@script}"]
+
         deploy = {
          'deploy' => @data,
          'user' => `whoami`.chomp,
