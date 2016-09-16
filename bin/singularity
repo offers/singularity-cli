@@ -14,7 +14,6 @@ uri = ARGV[1]
 file = ARGV[2]
 
 case action
-
   when "delete"
     print_usage unless ARGV.size == 3
     Singularity::Deleter.new(uri,file).delete
@@ -25,11 +24,13 @@ case action
     Singularity::Deployer.new(uri,file,release).deploy
 
   when "run"
-    print_usage unless ARGV.size == 5
-    release = ARGV[3]
-    script = ARGV[4]
-    Singularity::Runner.new(uri,file,release,script).runner
+    # remove the word "run" from ARGV, and pass that to Runner
+    script = ARGV.shift
+    Singularity::Runner.new(script).runner
     
+  when "ssh"
+    # don't change the command to /sbin/my_init, just call the ssh script
+  
   else
       print_usage
 end
