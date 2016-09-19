@@ -75,7 +75,7 @@ module Singularity
         puts "#{task_id} #{$!.response}"
       end
     end
-  end 
+  end
 
   class Runner
     def initialize(script)
@@ -85,34 +85,42 @@ module Singularity
       #
 
       # read .mescal.json for ssh command, image, release number, cpus, mem
-      mescalDotJson = File.join(Dir.pwd, ".mescal.json")
-      mescalConfig = ERB.new(open(mescalDotJson).read)
-      mescalData = JSON.parse(@mescalConfig.result(Request.new.get_binding))
-      sshCmd = @mescalData['sshCmd']
+      @mescalData = JSON.parse(ERB.new(open(File.join(Dir.pwd, ".mescal.json")).read).result(Request.new.get_binding))
+      @sshCmd = @mescalData['sshCmd']
       @image = @mescalData['image'].split(':')[0]
       @release = @mescalData['image'].split(':')[1]
 
       # read mesos-deploy.yml for singularity url
-      mesosDeployDotYml = File.join(Dir.pwd, "mesos-deploy.yml")
-      mesosDeployConfig = YAML.load_file(mesosDeployDotYml)
-      @uri = mesosDeployConfig['singularity_url']
+      @mesosDeployConfig = YAML.load_file(File.join(Dir.pwd, "mesos-deploy.yml"))
+      @uri = @mesosDeployConfig['singularity_url']
 
-      # create request and deploy json data
-      @data = Hash.new
-      @data['id'] = script.join("_")
-      @data['command'] = "/sbin/my_init"
-      # args are either the script/commands passed to 'singularity run', or the ssh command
-      if script != "ssh"
+      # create request/deploy json data
+
+      @data = {
+        command: "/sbin/my_init",
+        resources: {
+          mem: @mescalData['mem'],
+          cpus: @mescalData['cpus']
+        },
+        env: {
+          APPLICATION_ENV: "production"
+        },
+        containerInfo: {
+          type: "DOCKER",
+          docker: {
+            image: @mescalData['image']
+          }
+        }
+      }
+      # args are either the the ssh command or the script/commands passed to 'singularity run'
+      if script == "ssh"
+        @data['id'] = "ssh"
+        @data['arguments'] = @sshCmd
+      else
+        @data['id'] = script.join("_")
         @data['arguments'] = ["--"]
         script.each { |i| @data['arguments'].push i }
-      else 
-        @data['arguments'] = sshCmd
-      end 
-      @data['resources']['mem'] = @mescalData['mem']
-      @data['resources']['cpus'] = @mescalData['cpus']
-      @data['env']['APPLICATION_ENV'] = "production"
-      @data['containerInfo']['type'] = "DOCKER"
-      @data['containerInfo']['docker']['image'] = @mescalData['image']
+      end
     end
 
     def is_paused
@@ -135,20 +143,20 @@ module Singularity
           @data['requestType'] = "RUN_ONCE"
           resp = RestClient.post "#{@uri}/api/requests", @data.to_json, :content_type => :json
         end
-        # put script in commands & arguments line
-        
+
         # deploy the request
         @data['requestId'] = @data['id']
         @data['id'] = "#{@release}.#{Time.now.to_i}"
         deploy = {
-         'deploy' => @data,
+         'deploy' => @data.to_json,
          'user' => `whoami`.chomp,
          'unpauseOnSuccessfulDeploy' => false
         }
         resp = RestClient.post "#{@uri}/api/deploys", deploy.to_json, :content_type => :json
-        
+        puts "hi again"
+
         puts " Deployed and running #{@script}".green
-        # the line below needs to be changed to call the output from the API and print it to this console
+        # the line below needs to be changed to call the output from the API and print it to the calling console
         #
         # TODO
         #

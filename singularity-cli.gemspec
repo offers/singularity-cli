@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
     s.name        = 'singularity-cli'
-    s.version     = '0.2.1'
+    s.version     = '0.3.0'
     s.licenses    = ['MIT']
     s.summary     = "singularity deploy and delete command line tools"
     s.description = "Usage: [singularity delete <uri> <file>] or [singularity deploy <uri> <file> <release>]"
@@ -8,7 +8,7 @@ Gem::Specification.new do |s|
     s.files       = %w[
                      LICENSE
                      README.md
-                    ] + Dir['lib/*.rb']  
+                    ] + Dir['lib/*.rb']
     s.homepage    = 'https://github.com/offers/singularity-cli'
     s.executables = %w[singularity]
     s.add_runtime_dependency 'rest-client', '~> 1.8', '>= 1.8.0'

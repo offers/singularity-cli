@@ -27,10 +27,10 @@ case action
     # remove the word "run" from ARGV, and pass that to Runner
     script = ARGV.shift
     Singularity::Runner.new(script).runner
-    
+
   when "ssh"
-    # don't change the command to /sbin/my_init, just call the ssh script
-  
+    Singularity::Runner.new("ssh").runner
+
   else
       print_usage
 end
