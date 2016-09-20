@@ -148,7 +148,7 @@ module Singularity
         @data['requestId'] = @data['id']
         @data['id'] = "#{@release}.#{Time.now.to_i}"
         deploy = {
-         'deploy' => @data.to_json,
+         'deploy' => @data,
          'user' => `whoami`.chomp,
          'unpauseOnSuccessfulDeploy' => false
         }
