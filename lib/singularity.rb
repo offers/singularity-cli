@@ -152,11 +152,14 @@ module Singularity
          'user' => `whoami`.chomp,
          'unpauseOnSuccessfulDeploy' => false
         }
-
         #####################
         #####################
         # debugging line
+        puts ""
+        puts @script
+        puts ""
         puts @deploy.to_json
+        puts ""
         #####################
         #####################
 
