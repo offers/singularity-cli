@@ -117,7 +117,7 @@ module Singularity
         @data['id'] = "ssh"
         @data['command'] = "#{@sshCmd}"
       else # or we passed a script/commands to 'singularity run'
-        @data['id'] = @script.join("_")
+        @data['id'] = @script.join
         @data['arguments'] = ["--"]
         @script.each { |i| @data['arguments'].push i }
       end
