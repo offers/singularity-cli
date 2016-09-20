@@ -117,7 +117,7 @@ module Singularity
         @data['id'] = "ssh"
         @data['command'] = "#{@sshCmd}"
       else # or we passed a script/commands to 'singularity run'
-        @data['id'] = script.join("_")
+        @data['id'] = @script.join("_")
         @data['arguments'] = ["--"]
         @script.each { |i| @data['arguments'].push i }
       end
@@ -152,8 +152,14 @@ module Singularity
          'user' => `whoami`.chomp,
          'unpauseOnSuccessfulDeploy' => false
         }
-        puts @data.to_json
+
+        #####################
+        #####################
+        # debugging line
         puts @deploy.to_json
+        #####################
+        #####################
+
         resp = RestClient.post "#{@uri}/api/deploys", @deploy.to_json, :content_type => :json
 
         puts " Deployed and running #{@script}".green
