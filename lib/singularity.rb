@@ -99,7 +99,7 @@ module Singularity
       @data = {
         'command' => "/sbin/my_init",
         'resources' => {
-          'mem' => @mescalData['mem'],
+          'memoryMb' => @mescalData['mem'],
           'cpus' => @mescalData['cpus'],
           'numPorts' => 0
         },
