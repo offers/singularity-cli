@@ -83,7 +83,7 @@ module Singularity
       #
       # TODO
       #
-
+      @script = script
       # read .mescal.json for ssh command, image, release number, cpus, mem
       @mescalData = JSON.parse(ERB.new(open(File.join(Dir.pwd, ".mescal.json")).read).result(Request.new.get_binding))
       @sshCmd = @mescalData['sshCmd']
@@ -95,7 +95,6 @@ module Singularity
       @uri = @mesosDeployConfig['singularity_url']
 
       # create request/deploy json data
-
       @data = {
         'command' => "/sbin/my_init",
         'resources' => {
@@ -113,14 +112,14 @@ module Singularity
           }
         }
       }
-      # args are either the the ssh command or the script/commands passed to 'singularity run'
-      if script == "ssh"
+      # either we typed 'singularity ssh'
+      if @script == "ssh"
         @data['id'] = "ssh"
         @data['command'] = "#{@sshCmd}"
-      else
+      else # or we passed a script/commands to 'singularity run'
         @data['id'] = script.join("_")
         @data['arguments'] = ["--"]
-        script.each { |i| @data['arguments'].push i }
+        @script.each { |i| @data['arguments'].push i }
       end
     end
 
@@ -156,7 +155,6 @@ module Singularity
         puts @data.to_json
         puts @deploy.to_json
         resp = RestClient.post "#{@uri}/api/deploys", @deploy.to_json, :content_type => :json
-        puts "hi again"
 
         puts " Deployed and running #{@script}".green
         # the line below needs to be changed to call the output from the API and print it to the calling console
