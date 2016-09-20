@@ -148,12 +148,12 @@ module Singularity
         @data['requestId'] = @data['id']
         @data['id'] = "#{@release}.#{Time.now.to_i}"
         deploy = {
-         'deploy' => @data,
-         'user' => `whoami`.chomp,
-         'unpauseOnSuccessfulDeploy' => false
+         deploy: @data,
+         user: `whoami`.chomp,
+         unpauseOnSuccessfulDeploy: false
         }
         resp = RestClient.post "#{@uri}/api/deploys", deploy.to_json, :content_type => :json
-        puts "hi again"
+        puts "SCRIPT SUCCESSFULLY DESERIALIZED"
 
         puts " Deployed and running #{@script}".green
         # the line below needs to be changed to call the output from the API and print it to the calling console
