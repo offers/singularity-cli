@@ -100,7 +100,7 @@ module Singularity
         'command' => "/sbin/my_init",
         'resources' => {
           'mem' => @mescalData['mem'],
-          'cpus' => @mescalData['cpus']
+          'cpus' => @mescalData['cpus'],
           'numPorts' => 0
         },
         'env' => {
