@@ -78,7 +78,7 @@ module Singularity
   end
 
   class Runner
-    def initialize(script)
+    def initialize(*script)
       # check to see that .mescal.json and mesos-deploy.yml exist
       #
       # TODO
@@ -117,7 +117,7 @@ module Singularity
         @data['id'] = "ssh"
         @data['command'] = "#{@sshCmd}"
       else # or we passed a script/commands to 'singularity run'
-        @data['id'] = @script.join
+        @data['id'] = @script.join("_")
         @data['arguments'] = ["--"]
         @script.each { |i| @data['arguments'].push i }
       end
