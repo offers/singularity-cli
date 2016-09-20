@@ -101,6 +101,7 @@ module Singularity
         'resources' => {
           'mem' => @mescalData['mem'],
           'cpus' => @mescalData['cpus']
+          'numPorts' => 0
         },
         'env' => {
           'APPLICATION_ENV' => "production"
