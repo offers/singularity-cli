@@ -152,6 +152,8 @@ module Singularity
          'user' => `whoami`.chomp,
          'unpauseOnSuccessfulDeploy' => false
         }
+        puts @data.to_json
+        puts @deploy.to_json
         resp = RestClient.post "#{@uri}/api/deploys", deploy.to_json, :content_type => :json
         puts "hi again"
 
