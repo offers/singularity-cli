@@ -97,18 +97,18 @@ module Singularity
       # create request/deploy json data
 
       @data = {
-        command: "/sbin/my_init",
-        resources: {
-          mem: @mescalData['mem'],
-          cpus: @mescalData['cpus']
+        'command' => "/sbin/my_init",
+        'resources' => {
+          'mem' => @mescalData['mem'],
+          'cpus' => @mescalData['cpus']
         },
-        env: {
-          APPLICATION_ENV: "production"
+        'env' => {
+          'APPLICATION_ENV' => "production"
         },
-        containerInfo: {
-          type: "DOCKER",
-          docker: {
-            image: @mescalData['image']
+        'containerInfo' => {
+          'type' => "DOCKER",
+          'docker' => {
+            'image' => @mescalData['image']
           }
         }
       }
@@ -148,12 +148,12 @@ module Singularity
         @data['requestId'] = @data['id']
         @data['id'] = "#{@release}.#{Time.now.to_i}"
         deploy = {
-         deploy: @data,
-         user: `whoami`.chomp,
-         unpauseOnSuccessfulDeploy: false
+         'deploy' => @data,
+         'user' => `whoami`.chomp,
+         'unpauseOnSuccessfulDeploy' => false
         }
         resp = RestClient.post "#{@uri}/api/deploys", deploy.to_json, :content_type => :json
-        puts "SCRIPT SUCCESSFULLY DESERIALIZED"
+        puts "hi again"
 
         puts " Deployed and running #{@script}".green
         # the line below needs to be changed to call the output from the API and print it to the calling console
