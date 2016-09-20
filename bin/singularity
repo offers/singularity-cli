@@ -25,13 +25,8 @@ case action
 
   when "run"
     # remove the word "run" from ARGV, and pass that to Runner
-    script = ARGV.shift
-    puts ""
-    puts ARGV.shift
-    puts ""
-    puts ARGV.shift
-    puts ""
-    Singularity::Runner.new(script).runner
+    ARGV.shift
+    Singularity::Runner.new(ARGV).runner
 
   when "ssh"
     Singularity::Runner.new("ssh").runner
