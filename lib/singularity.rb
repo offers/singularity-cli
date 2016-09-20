@@ -115,8 +115,7 @@ module Singularity
       # args are either the the ssh command or the script/commands passed to 'singularity run'
       if script == "ssh"
         @data['id'] = "ssh"
-        @data['arguments'] = ["--"]
-        @data['arguments'].push @sshCmd
+        @data['command'] = [ "#{@sshCmd}" ]
       else
         @data['id'] = script.join("_")
         @data['arguments'] = ["--"]
