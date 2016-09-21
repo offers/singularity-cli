@@ -78,17 +78,17 @@ module Singularity
   end
 
   class Runner
-    def initialize(*script)
-      # check to see that .mescal.json and mesos-deploy.yml exist
+    def initialize(script)
       #
       # TODO
+      # check to see that .mescal.json and mesos-deploy.yml exist
       #
       @script = script
       # read .mescal.json for ssh command, image, release number, cpus, mem
-      @mescalData = JSON.parse(ERB.new(open(File.join(Dir.pwd, ".mescal.json")).read).result(Request.new.get_binding))
-      @sshCmd = @mescalData['sshCmd']
-      @image = @mescalData['image'].split(':')[0]
-      @release = @mescalData['image'].split(':')[1]
+      @configData = JSON.parse(ERB.new(open(File.join(Dir.pwd, ".mescal.json")).read).result(Request.new.get_binding))
+      @sshCmd = @configData['sshCmd']
+      @image = @configData['image'].split(':')[0]
+      @release = @configData['image'].split(':')[1]
 
       # read mesos-deploy.yml for singularity url
       @mesosDeployConfig = YAML.load_file(File.join(Dir.pwd, "mesos-deploy.yml"))
@@ -98,9 +98,9 @@ module Singularity
       @data = {
         'command' => "/sbin/my_init",
         'resources' => {
-          'memoryMb' => @mescalData['mem'],
-          'cpus' => @mescalData['cpus'],
-          'numPorts' => 0
+          'memoryMb' => @configData['mem'],
+          'cpus' => @configData['cpus'],
+          'numPorts' => 1
         },
         'env' => {
           'APPLICATION_ENV' => "production"
@@ -108,16 +108,25 @@ module Singularity
         'containerInfo' => {
           'type' => "DOCKER",
           'docker' => {
-            'image' => @mescalData['image']
+            'image' => @configData['image'],
+            'network' => "BRIDGE",
+            'portMappings' => [{
+              'containerPortType' => "LITERAL",
+              'containerPort' => 22,
+              'hostPortType' => "LITERAL",
+              'hostPort' => 5432,
+              'protocol' => "tcp"
+            }]
           }
         }
       }
       # either we typed 'singularity ssh'
       if @script == "ssh"
-        @data['id'] = "ssh"
+        @data['id'] = Dir.pwd.split('/').last + "_ssh_"
         @data['command'] = "#{@sshCmd}"
       else # or we passed a script/commands to 'singularity run'
-        @data['id'] = @script.join("_")
+        @data['id'] = @script.join("_").tr('@/\*?% []#$', '_')
+        @data['id'][0] = ''
         @data['arguments'] = ["--"]
         @script.each { |i| @data['arguments'].push i }
       end
@@ -154,23 +163,32 @@ module Singularity
         }
         #####################
         #####################
-        # debugging line
+        # debugging info
         puts ""
+        puts "commands: "
         puts @script
         puts ""
+        puts "json for debugging: "
         puts @deploy.to_json
         puts ""
         #####################
         #####################
 
         resp = RestClient.post "#{@uri}/api/deploys", @deploy.to_json, :content_type => :json
+        #if @script == "ssh"
+          #exec "ssh -o LogLevel=quiet -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@#{ip} -p #{port}; #{killer}"
+        #end
 
         puts " Deployed and running #{@script}".green
-        # the line below needs to be changed to call the output from the API and print it to the calling console
         #
         # TODO
+        # the line below needs to be changed to call the output from the API and print it to the calling console
         #
-        puts " Task will exit after script is complete, check #{@uri} for the output."
+        puts " Task will exit after script is complete, check the link below for the output."
+        puts " #{@uri}/request/#{@data['requestId']}".light_blue
+        puts ""
+        # the below line is me trying to figure out how to output the STDOUT/STDERR to the shell, not working yets
+        puts RestClient.get "#{@uri}/api/requests/request/#{@data['requestId']}"
       rescue Exception => e
         puts " #{e.response}".red
       end

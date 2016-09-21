@@ -24,7 +24,7 @@ case action
     Singularity::Deployer.new(uri,file,release).deploy
 
   when "run"
-    # remove the word "run" from ARGV, and pass that to Runner
+    # remove the word "run" from ARGV, and pass the remainder to Runner
     ARGV.shift
     Singularity::Runner.new(ARGV).runner
 
