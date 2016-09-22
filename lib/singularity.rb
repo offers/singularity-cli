@@ -100,7 +100,7 @@ module Singularity
         'resources' => {
           'memoryMb' => @configData['mem'],
           'cpus' => @configData['cpus'],
-          'numPorts' => 0
+          'numPorts' => 1
         },
         'env' => {
           'APPLICATION_ENV' => "production"
