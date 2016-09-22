@@ -111,11 +111,10 @@ module Singularity
             'image' => @configData['image'],
             'network' => "BRIDGE",
             'portMappings' => [{
-              'containerPortType' => "FROM_OFFER",
-              'containerPort' => 0,
-              'hostPortType' => "LITERAL",
-              'hostPort' => 22,
-              'protocol' => "tcp"
+                'containerPortType' => "FROM_OFFER",
+                'containerPort' => 0,
+                'hostPortType' => "FROM_OFFER",
+                'hostPort' => 0
             }]
           }
         }
