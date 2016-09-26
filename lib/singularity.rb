@@ -115,12 +115,16 @@ module Singularity
       }
       # either we typed 'singularity ssh'
       if @script == "ssh"
-        @data['id'] = Dir.pwd.split('/').last + "_ssh_"
+        @data['id'] = Dir.pwd.split('/').last + "_SSH"
         @data['command'] = "#{@sshCmd}"
       else # or we passed a script/commands to 'singularity run'
         @data['id'] = @script.join("_").tr('@/\*?% []#$', '_')
         @data['id'][0] = ''
         @data['arguments'] = ["--"]
+        #
+        @data['command'] = @script[0]
+        @script[0]=''
+        #
         @script.each { |i| @data['arguments'].push i }
       end
     end
