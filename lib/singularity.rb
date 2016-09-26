@@ -120,7 +120,7 @@ module Singularity
       else # or we passed a script/commands to 'singularity run'
         @data['id'] = @script.join("_").tr('@/\*?% []#$', '_')
         @data['id'][0] = ''
-        # @data['arguments'] = ["--"]
+        @data['arguments'] = []
         #
         @data['command'] = @script[0]
         @script.shift
