@@ -125,7 +125,8 @@ module Singularity
         if @script[0] == "runx"
           @data['arguments'] = [] # don't use "--" as first argument
           @data['command'] = @script[1] #remove "runx" from commands
-          @script.shift.shift
+          @script.shift
+          @script.shift
         else
           @data['arguments'] = ["--"]
         end 
