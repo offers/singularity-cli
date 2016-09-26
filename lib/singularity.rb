@@ -120,11 +120,16 @@ module Singularity
       else # or we passed a script/commands to 'singularity run'
         @data['id'] = @script.join("_").tr('@/\*?% []#$', '_')
         @data['id'][0] = ''
-        @data['arguments'] = []
-        #
-        @data['command'] = @script[0]
-        @script.shift
-        #
+        
+        # if we passed "runx", then skip use of /sbin/my_init
+        if @script[0] == "runx"
+          @data['arguments'] = [] # don't use "--" as first argument
+          @data['command'] = @script[1] #remove "runx" from commands
+          @script.shift.shift
+        else
+          @data['arguments'] = ["--"]
+        end 
+
         @script.each { |i| @data['arguments'].push i }
       end
     end
