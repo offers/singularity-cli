@@ -109,13 +109,7 @@ module Singularity
           'type' => "DOCKER",
           'docker' => {
             'image' => @configData['image'],
-            'network' => "BRIDGE",
-            'portMappings' => [{
-                'containerPortType' => "LITERAL",
-                'containerPort' => 22,
-                'hostPortType' => "FROM_OFFER",
-                'hostPort' => 0
-            }]
+            'network' => "HOST"
           }
         }
       }
