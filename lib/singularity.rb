@@ -117,10 +117,8 @@ module Singularity
       if @script == "ssh"
         @data['id'] = Dir.pwd.split('/').last + "_SSH"
         @data['command'] = "#{@sshCmd}"
-      else # or we passed a script/commands to 'singularity run'
-        @data['id'] = @script.join("_").tr('@/\*?% []#$', '_')
-        @data['id'][0] = ''
-        
+      # or we passed a script/commands to 'singularity run'
+      else 
         # if we passed "runx", then skip use of /sbin/my_init
         if @script[0] == "runx"
           @data['arguments'] = [] # don't use "--" as first argument
@@ -130,7 +128,8 @@ module Singularity
         else
           @data['arguments'] = ["--"]
         end 
-
+        @data['id'] = @script.join("_").tr('@/\*?% []#$', '_')
+        @data['id'][0] = ''
         @script.each { |i| @data['arguments'].push i }
       end
     end
