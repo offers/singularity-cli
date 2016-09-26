@@ -24,8 +24,13 @@ case action
     Singularity::Deployer.new(uri,file,release).deploy
 
   when "run"
-    # remove the word "run" from ARGV, and pass the remainder to Runner
+    # remove the word "run" from ARGV, pass the remainder to Runner
     ARGV.shift
+    Singularity::Runner.new(ARGV).runner
+
+  when "runx"
+    # this option is to skip the use of /sbin/my_init
+    # (some commands won't run correctly when both are used)
     Singularity::Runner.new(ARGV).runner
 
   when "ssh"
