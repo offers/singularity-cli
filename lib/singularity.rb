@@ -119,17 +119,20 @@ module Singularity
         @data['command'] = "#{@sshCmd}"
       # or we passed a script/commands to 'singularity run'
       else 
+        
         # if we passed "runx", then skip use of /sbin/my_init
         if @script[0] == "runx"
           @data['arguments'] = [] # don't use "--" as first argument
           @data['command'] = @script[1] #remove "runx" from commands
           @script.shift
+          @data['id'] = @script.join("_").tr('@/\*?% []#$', '_')
+          @data['id'][0] = ''
           @script.shift
         else
           @data['arguments'] = ["--"]
+          @data['id'] = @script.join("_").tr('@/\*?% []#$', '_')
+          @data['id'][0] = ''
         end 
-        @data['id'] = @script.join("_").tr('@/\*?% []#$', '_')
-        @data['id'][0] = ''
         @script.each { |i| @data['arguments'].push i }
       end
     end
