@@ -119,7 +119,6 @@ module Singularity
         @data['command'] = "#{@sshCmd}"
       # or we passed a script/commands to 'singularity run'
       else 
-        
         # if we passed "runx", then skip use of /sbin/my_init
         # if @script[0] == "runx"
         #   @data['arguments'] = [] # don't use "--" as first argument
@@ -130,7 +129,7 @@ module Singularity
         #   @script.shift
         # else
           @data['arguments'] = ["--"]
-          @data['id'] = @script.join("_").tr('@/\*?% []#$', '_')
+          @data['id'] = @script.join("-").tr('@/\*?% []#$', '_')
           @data['id'][0] = ''
         # end 
         @script.each { |i| @data['arguments'].push i }
@@ -180,6 +179,9 @@ module Singularity
         #####################
 
         resp = RestClient.post "#{@uri}/api/deploys", @deploy.to_json, :content_type => :json
+        #####################
+        # MAKE THE SSH WORK #
+        #####################
         #if @script == "ssh"
           #exec "ssh -o LogLevel=quiet -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@#{ip} -p #{port}; #{killer}"
         #end
@@ -192,8 +194,13 @@ module Singularity
         puts " Task will exit after script is complete, check the link below for the output."
         puts " #{@uri}/request/#{@data['requestId']}".light_blue
         puts ""
-        # the below line is me trying to figure out how to output the STDOUT/STDERR to the shell, not working yets
-        puts RestClient.get "#{@uri}/api/requests/request/#{@data['requestId']}"
+        # the below line is me trying to figure out how to output the STDOUT/STDERR to the shell, not working yet
+        # puts RestClient.get "#{@uri}/api/requests/request/#{@data['requestId']}"
+
+        ########################################################
+        # NEED TO DELETE THE REQUEST AFTER ALL OF THIS IS OVER #
+        ########################################################
+
       rescue Exception => e
         puts " #{e.response}".red
       end
