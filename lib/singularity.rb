@@ -79,10 +79,10 @@ module Singularity
 
   class Runner
     def initialize(script)
-      #
+      #########################################################
       # TODO
       # check to see that .mescal.json and mesos-deploy.yml exist
-      #
+      #########################################################
       @script = script
       # read .mescal.json for ssh command, image, release number, cpus, mem
       @configData = JSON.parse(ERB.new(open(File.join(Dir.pwd, ".mescal.json")).read).result(Request.new.get_binding))
@@ -175,16 +175,17 @@ module Singularity
         #end
 
         puts " Deployed and running #{@script}".green
-        #
+        #########################################################
         # TODO
         # the line below needs to be changed to call the output from the API and print it to the calling console
-        #
+        #########################################################
         puts " Task will exit after script is complete, check the link below for the output."
         puts " #{@uri}/request/#{@data['requestId']}".light_blue
         puts ""
         # the below line is me trying to figure out how to output the STDOUT/STDERR to the shell, not working yet
-        puts RestClient.get "#{@uri}/api/requests/request/#{@data['requestId']}"
-
+        puts "DELETED REQUEST: ".orange
+        requestId = RestClient.delete "#{@uri}/api/requests/request/#{@data['requestId']}"
+        puts requestId.orange
         ########################################################
         # NEED TO DELETE THE REQUEST AFTER ALL OF THIS IS OVER #
         ########################################################
