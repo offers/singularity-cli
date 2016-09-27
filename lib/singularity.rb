@@ -120,18 +120,18 @@ module Singularity
       # or we passed a script/commands to 'singularity run'
       else 
         # if we passed "runx", then skip use of /sbin/my_init
-        # if @script[0] == "runx"
-        #   @data['arguments'] = [] # don't use "--" as first argument
-        #   @data['command'] = @script[1] #remove "runx" from commands
-        #   @script.shift
-        #   @data['id'] = @script.join("_").tr('@/\*?% []#$', '_')
-        #   @data['id'][0] = ''
-        #   @script.shift
-        # else
+        if @script[0] == "runx"
+          @data['arguments'] = [] # don't use "--" as first argument
+          @data['command'] = @script[1] #remove "runx" from commands
+          @script.shift
+          @data['id'] = @script.join("_").tr('@/\*?% []#$', '_')
+          @data['id'][0] = ''
+          @script.shift
+        else
           @data['arguments'] = ["--"]
           @data['id'] = @script.join("-").tr('@/\*?% []#$', '_')
           @data['id'][0] = ''
-        # end 
+        end 
         @script.each { |i| @data['arguments'].push i }
       end
     end
@@ -165,18 +165,6 @@ module Singularity
          'user' => `whoami`.chomp,
          'unpauseOnSuccessfulDeploy' => false
         }
-        #####################
-        #####################
-        # debugging info
-        puts ""
-        puts "commands: "
-        puts @script
-        puts ""
-        puts "json for debugging: "
-        puts @deploy.to_json
-        puts ""
-        #####################
-        #####################
 
         resp = RestClient.post "#{@uri}/api/deploys", @deploy.to_json, :content_type => :json
         #####################
@@ -195,7 +183,7 @@ module Singularity
         puts " #{@uri}/request/#{@data['requestId']}".light_blue
         puts ""
         # the below line is me trying to figure out how to output the STDOUT/STDERR to the shell, not working yet
-        # puts RestClient.get "#{@uri}/api/requests/request/#{@data['requestId']}"
+        puts RestClient.get "#{@uri}/api/requests/request/#{@data['requestId']}"
 
         ########################################################
         # NEED TO DELETE THE REQUEST AFTER ALL OF THIS IS OVER #
