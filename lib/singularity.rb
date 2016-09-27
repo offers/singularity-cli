@@ -165,29 +165,33 @@ module Singularity
          'user' => `whoami`.chomp,
          'unpauseOnSuccessfulDeploy' => false
         }
-
         resp = RestClient.post "#{@uri}/api/deploys", @deploy.to_json, :content_type => :json
-        #####################
-        # MAKE THE SSH WORK #
-        #####################
-        #if @script == "ssh"
-          #exec "ssh -o LogLevel=quiet -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@#{ip} -p #{port}; #{killer}"
-        #end
 
-        puts " Deployed and running #{@script}".green
-        #########################################################
-        # TODO
-        # the line below needs to be changed to call the output from the API and print it to the calling console
-        #########################################################
-        puts " Task will exit after script is complete, check the link below for the output."
-        puts " #{@uri}/request/#{@data['requestId']}".light_blue
-        puts ""
-        # the below line is me trying to figure out how to output the STDOUT/STDERR to the shell, not working yet
-        puts "DELETED REQUEST: ".yellow
-        puts RestClient.delete "#{@uri}/api/requests/request/#{@data['requestId']}" 
+        # SSH into box & delete task afterward
+        if @script == "ssh"
+          ip = 
+          port = 
+          killer = 
+          exec "ssh -o LogLevel=quiet -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@#{ip} -p #{port}"
+          RestClient.delete "#{@uri}/api/requests/request/#{@data['requestId']}"
+        else
+          # or provide link to task in browser so we can see output
+          puts " Deployed and running #{@script}".green
+          #########################################################
+          # TODO: the line below needs to be changed to call the output from the API and print it to the calling console
+          #########################################################
+          puts " Task will exit after script is complete, check the link below for the output."
+          puts " #{@uri}/request/#{@data['requestId']}".light_blue
+          puts ""
+        end
+
         ########################################################
-        # NEED TO DELETE THE REQUEST AFTER ALL OF THIS IS OVER #
+        # NEED TO DELETE THE REQUEST AFTER ALL OF THIS IS OVER
+        # have to figure out how to confirm that it completed first
+        # the above SSH line (Restclient.delete) can be taken away if we figure out how to confirm task complete via API
         ########################################################
+        # puts "DELETED REQUEST: ".yellow
+        # puts RestClient.delete "#{@uri}/api/requests/request/#{@data['requestId']}" 
 
       rescue Exception => e
         puts " #{e.response}".red
