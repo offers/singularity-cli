@@ -184,10 +184,8 @@ module Singularity
         puts ""
         # the below line is me trying to figure out how to output the STDOUT/STDERR to the shell, not working yet
         # puts "DELETED REQUEST: ".orange
-        @request = RestClient.get "#{@uri}/api/requests/request/#{@data['requestId']}"
-        req = JSON.parse @request.to_json
-        puts ""
-        puts req
+        @request = eval(RestClient.get "#{@uri}/api/requests/request/#{@data['requestId']}")
+        puts @request['state']
         # puts RestClient.delete "#{@uri}/api/requests/request/#{@data['requestId']}" 
         ########################################################
         # NEED TO DELETE THE REQUEST AFTER ALL OF THIS IS OVER #
