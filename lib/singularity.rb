@@ -187,7 +187,7 @@ module Singularity
         @request = RestClient.get "#{@uri}/api/requests/request/#{@data['requestId']}"
         puts @request
         puts ""
-        puts @request['requestId']
+        puts @request['request']['id']
         # puts RestClient.delete "#{@uri}/api/requests/request/#{@data['requestId']}" 
         ########################################################
         # NEED TO DELETE THE REQUEST AFTER ALL OF THIS IS OVER #
