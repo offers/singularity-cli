@@ -173,11 +173,22 @@ module Singularity
         }
         resp = RestClient.post "#{@uri}/api/deploys", @deploy.to_json, :content_type => :json
         resp = JSON.parse(resp)
+        puts "DEPLOY POST:".red
         puts resp
+        
         #
-        @tasks = RestClient.get "#{@uri}/api/history/request/#{@data['requestId']}/tasks"
-        @tasks = JSON.parse(@tasks)
-        puts @tasks[0]
+        tasks = RestClient.get "#{@uri}/api/history/request/#{@data['requestId']}/tasks"
+        tasks = JSON.parse(tasks)
+        puts "tasks[0]:".red
+        puts tasks[0]
+
+
+        ids = RestClient.get "#{@uri}/api/tasks/scheduled/ids"
+        ids = JSON.parse(ids)
+        puts "Task IDs:".red
+        puts ids
+
+
 
         # SSH into box & delete task afterward
         if @script == "ssh"
