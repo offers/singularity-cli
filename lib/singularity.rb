@@ -182,11 +182,15 @@ module Singularity
         puts "tasks[0]:".red
         puts tasks[0]
 
-
         ids = RestClient.get "#{@uri}/api/tasks/scheduled/ids"
         ids = JSON.parse(ids)
         puts "Task IDs:".red
         puts ids
+
+        at = RestClient.get "#{@uri}/api/tasks/active"
+        at = JSON.parse(at)
+        puts "Active tasks:".red
+        puts at
 
 
 
