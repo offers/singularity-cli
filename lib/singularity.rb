@@ -111,10 +111,10 @@ module Singularity
             'image' => @configData['image'],
             'network' => "BRIDGE",
             'portMappings' => [{
-              'containerPortType': "FROM_OFFER", # FROM_OFFER or LITERAL
-              'containerPort': 0, # If type is FROM_OFFER this = index of port assigned by Mesos. (0 -> first port)
-              'hostPortType': "FROM_OFFER",
-              'hostPort': 0
+              'containerPortType': "LITERAL",
+              'containerPort': 22,
+              'hostPortType': "LITERAL",
+              'hostPort': 2200
             }]
           }
         }
