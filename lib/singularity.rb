@@ -166,7 +166,8 @@ module Singularity
          'unpauseOnSuccessfulDeploy' => false
         }
         resp = RestClient.post "#{@uri}/api/deploys", @deploy.to_json, :content_type => :json
-        @tasks = RestClient.get "#{@uri}/api/tasks/active"
+
+        @tasks = RestClient.get "#{@uri}/api/tasks"
         puts @tasks
 
         # SSH into box & delete task afterward
