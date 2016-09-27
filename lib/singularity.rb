@@ -172,17 +172,17 @@ module Singularity
          'unpauseOnSuccessfulDeploy' => false
         }
         resp = RestClient.post "#{@uri}/api/deploys", @deploy.to_json, :content_type => :json
+        resp = JSON.parse(resp)
         puts resp
         #
         @tasks = RestClient.get "#{@uri}/api/history/request/#{@data['requestId']}/tasks"
         @tasks = JSON.parse(@tasks)
-        puts @tasks
+        puts @tasks[0]
 
         # SSH into box & delete task afterward
         if @script == "ssh"
           ip = 
-          port = 
-          killer = 
+          port = 2200
           exec "ssh -o LogLevel=quiet -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@#{ip} -p #{port}"
           RestClient.delete "#{@uri}/api/requests/request/#{@data['requestId']}"
         else
