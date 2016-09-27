@@ -167,7 +167,7 @@ module Singularity
         }
         resp = RestClient.post "#{@uri}/api/deploys", @deploy.to_json, :content_type => :json
 
-        @tasks = RestClient.get "#{@uri}/api/history/request/#{@data['requestId']}/requests"
+        @tasks = RestClient.get "#{@uri}/api/history/request/#{@data['requestId']}/tasks"
         puts @tasks
 
         # SSH into box & delete task afterward
