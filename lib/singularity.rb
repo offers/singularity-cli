@@ -130,12 +130,12 @@ module Singularity
           @data['arguments'] = [] # don't use "--" as first argument
           @data['command'] = @script[1] #remove "runx" from commands
           @script.shift
-          @data['id'] = @script.join("_").tr('@/\*?% []#$', '_')
+          @data['id'] = @script.join("--").tr('@/\*?% []#$', '_')
           @data['id'][0] = ''
           @script.shift
         else
           @data['arguments'] = ["--"]
-          @data['id'] = @script.join("_").tr('@/\*?% []#$', '_')
+          @data['id'] = @script.join("--").tr('@/\*?% []#$', '_')
           @data['id'][0] = ''
         end 
         @script.each { |i| @data['arguments'].push i }
@@ -173,12 +173,12 @@ module Singularity
         }
         resp = RestClient.post "#{@uri}/api/deploys", @deploy.to_json, :content_type => :json
         resp = JSON.parse(resp)
-        puts "DEPLOY POST:".red
+        puts "Current DEPLOY returns:".red
         puts resp
         
         tasks = RestClient.get "#{@uri}/api/history/request/#{@data['requestId']}/tasks"
         tasks = JSON.parse(tasks)
-        puts "tasks[0]:".red
+        puts "tasks[0] (history):".red
         puts tasks[0]
 
         reqtasks = RestClient.get "#{@uri}/api/tasks/scheduled/request/#{@data['requestId']}"
