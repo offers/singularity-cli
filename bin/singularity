@@ -28,10 +28,10 @@ case action
     ARGV.shift
     Singularity::Runner.new(ARGV).runner
 
-  # when "runx"
-  #   # this option is to skip the use of /sbin/my_init
-  #   # (some commands won't run correctly when both are used)
-  #   Singularity::Runner.new(ARGV).runner
+  when "runx"
+    # this option is to skip the use of /sbin/my_init
+    # (some commands won't run correctly when both are used)
+    Singularity::Runner.new(ARGV).runner
 
   when "ssh"
     Singularity::Runner.new("ssh").runner

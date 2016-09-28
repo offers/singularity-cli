@@ -100,23 +100,23 @@ module Singularity
         'resources' => {
           'memoryMb' => @configData['mem'],
           'cpus' => @configData['cpus'],
-          'numPorts' => 0
+          'numPorts' => 1
         },
         'env' => {
           'APPLICATION_ENV' => "production"
         },
+        'requestType' => "RUN_ONCE",
         'containerInfo' => {
           'type' => "DOCKER",
           'docker' => {
             'image' => @configData['image'],
-            'network' => "HOST"
-            # 'network' => "BRIDGE",
-            # 'portMappings' => [{
-            #   'containerPortType': "LITERAL",
-            #   'containerPort': 22,
-            #   'hostPortType': "LITERAL",
-            #   'hostPort': 2200
-            # }]
+            'network' => "BRIDGE",
+            'portMappings' => [{
+              'containerPortType': "LITERAL",
+              'containerPort': 22,
+              'hostPortType': "FROM_OFFER",
+              'hostPort': 0
+            }]
           }
         }
       }
@@ -125,20 +125,21 @@ module Singularity
         @data['id'] = Dir.pwd.split('/').last + "_SSH"
         @data['command'] = "#{@sshCmd}"
       # or we passed a script/commands to 'singularity run'
-      else 
+      else
         # if we passed "runx", then skip use of /sbin/my_init
         if @script[0] == "runx"
           @data['arguments'] = [] # don't use "--" as first argument
           @data['command'] = @script[1] #remove "runx" from commands
           @script.shift
-          @data['id'] = @script.join("--").tr('@/\*?% []#$', '_')
+          @data['id'] = @script.join("-").tr('@/\*?% []#$', '_')
           @data['id'][0] = ''
           @script.shift
+        # else join /sbin/my_init with your commands
         else
           @data['arguments'] = ["--"]
-          @data['id'] = @script.join("--").tr('@/\*?% []#$', '_')
+          @data['id'] = @script.join("-").tr('@/\*?% []#$', '_')
           @data['id'][0] = ''
-        end 
+        end
         @script.each { |i| @data['arguments'].push i }
       end
     end
@@ -148,7 +149,7 @@ module Singularity
         resp = RestClient.get "#{@uri}/api/requests/request/#{@data['id']}"
         JSON.parse(resp)['state'] == 'PAUSED'
       rescue
-        print " CREATING...".blue
+        puts " CREATING...".blue
         false
       end
     end
@@ -160,8 +161,7 @@ module Singularity
           return
         else
           # create or update the request
-          @data['requestType'] = "RUN_ONCE"
-          resp = RestClient.post "#{@uri}/api/requests", @data.to_json, :content_type => :json
+          RestClient.post "#{@uri}/api/requests", @data.to_json, :content_type => :json
         end
 
         # deploy the request
@@ -172,45 +172,52 @@ module Singularity
          'user' => `whoami`.chomp,
          'unpauseOnSuccessfulDeploy' => false
         }
-        resp = RestClient.post "#{@uri}/api/deploys", @deploy.to_json, :content_type => :json
-        resp = JSON.parse(resp)
-        puts "Current DEPLOY returns:".red
-        puts resp
-        
-        tasks = RestClient.get "#{@uri}/api/history/request/#{@data['requestId']}/tasks"
-        tasks = JSON.parse(tasks)
-        puts "tasks[0] (history):".red
-        puts tasks[0]
+        RestClient.post "#{@uri}/api/deploys", @deploy.to_json, :content_type => :json
 
-        reqtasks = RestClient.get "#{@uri}/api/tasks/scheduled/request/#{@data['requestId']}"
-        reqtasks = JSON.parse(reqtasks)
-        puts "Scheduled tasks for #{@data['requestId']}".red
-        puts reqtasks
+        # wait until deployment completes and succeeds
+        begin
+          @deployState = RestClient.get "#{@uri}/api/requests/request/#{@data['requestId']}", :content_type => :json
+          @deployState = JSON.parse(@deployState)
+          print " Deploy state ".yellow
+          print @deployState['pendingDeployState']['currentDeployState'].yellow
+          puts "...".yellow
+          sleep 1
+        end until @deployState['pendingDeployState']['currentDeployState'] != "SUCCEEDED"
+        puts " Deploy SUCCEEDED.".green
 
-        # SSH into box & delete task afterward
         if @script == "ssh"
-          ip = 
-          port = 2200
-          exec "ssh -o LogLevel=quiet -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@#{ip} -p #{port}"
-          RestClient.delete "#{@uri}/api/requests/request/#{@data['requestId']}"
+          # SSH into box & delete request afterward
+          where = Dir.pwd.split('/').last
+          puts " SSHing into #{where}..."
+          # find the correct task so we can get IP/PORT
+          @thisTask = ''
+          while @thisTask == ''
+            # get active tasks until ours shows up
+            @tasks = RestClient.get "#{@uri}/api/tasks/active", :content_type => :json
+            @tasks = JSON.parse(@tasks)
+            @tasks.each do |entry|
+              if entry['taskRequest']['request']['id'] == @data['requestId']
+                @thisTask = entry
+              end
+            end
+          end
+          # get IP and PORT from task info
+          @ip = @thisTask['offer']['url']['address']['ip']
+          @port = @thisTask['mesosTask']['container']['docker']['portMappings'][0]['hostPort']
+          # SSH into the machine
+          sleep 3
+          exec "ssh -o LogLevel=quiet -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@#{@ip} -p #{@port} -v"
         else
           # or provide link to task in browser so we can see output
-          puts " Deployed and running #{@script}".green
+          puts " Deployed and running #{@data['command']} #{@data['arguments']}".green
           #########################################################
-          # TODO: the line below needs to be changed to call the output from the API and print it to the calling console
+          # TODO: call the output from the API and print it to the calling console
           #########################################################
-          puts " Task will exit after script is complete, check the link below for the output."
-          puts " #{@uri}/request/#{@data['requestId']}".light_blue
-          puts ""
-        end
+          RestClient.get "#{@uri}/history/task/#{@thisTask['taskId']}"
 
-        ########################################################
-        # NEED TO DELETE THE REQUEST AFTER ALL OF THIS IS OVER
-        # have to figure out how to confirm that it completed first
-        # the above SSH line (Restclient.delete) can be taken away if we figure out how to confirm task complete via API
-        ########################################################
-        # puts "DELETED REQUEST: ".yellow
-        # puts RestClient.delete "#{@uri}/api/requests/request/#{@data['requestId']}" 
+        end
+        # finally, delete the request
+        RestClient.delete "#{@uri}/api/requests/request/#{@data['requestId']}"
 
       rescue Exception => e
         puts " #{e.response}".red
