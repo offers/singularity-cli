@@ -186,7 +186,7 @@ module Singularity
         puts " Deploy SUCCEEDED.".green
 
         if @script == "ssh"
-          # SSH into box & delete request afterward
+          # SSH into box
           where = Dir.pwd.split('/').last
           puts " SSHing into #{where}..."
           # find the correct task so we can get IP/PORT
@@ -206,7 +206,8 @@ module Singularity
           @port = @thisTask['mesosTask']['container']['docker']['portMappings'][0]['hostPort']
           # SSH into the machine
           sleep 3
-          exec "ssh -o LogLevel=quiet -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@#{@ip} -p #{@port} -v"
+          authfile = Dir.pwd + "docker/api/ssh-key.pub"
+          exec "ssh -o LogLevel=quiet -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@#{@ip} -p #{@port} -v -i #{authfile}"
         else
           # or provide link to task in browser so we can see output
           puts " Deployed and running #{@data['command']} #{@data['arguments']}".green
