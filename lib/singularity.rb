@@ -206,7 +206,7 @@ module Singularity
           @port = @thisTask['mesosTask']['container']['docker']['portMappings'][0]['hostPort']
           # SSH into the machine
           sleep 3
-          authfile = Dir.pwd + "docker/api/ssh-key.pub"
+          authfile = Dir.pwd + "/docker/api/ssh-key.pub"
           exec "ssh -o LogLevel=quiet -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@#{@ip} -p #{@port} -v -i #{authfile}"
         else
           # or provide link to task in browser so we can see output
