@@ -206,19 +206,18 @@ module Singularity
           @port = @thisTask['mesosTask']['container']['docker']['portMappings'][0]['hostPort']
           # SSH into the machine
           sleep 3
-          exec "ssh -o LogLevel=quiet -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@#{@ip} -p #{@port} -v -i ~/.ssh/vertive-use1.pem"
+          exec "ssh -o LogLevel=quiet -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@#{@ip} -p #{@port}"
         else
           # or provide link to task in browser so we can see output
           puts " Deployed and running #{@data['command']} #{@data['arguments']}".green
-          #########################################################
-          # TODO: call the output from the API and print it to the calling console
-          #########################################################
-          RestClient.get "#{@uri}/history/task/#{@thisTask['taskId']}"
 
         end
+        # print history of task (stdout/stderr?)
+        history = RestClient.get "#{@uri}/history/task/#{@thisTask['taskId']}"
+        puts history
+
         # finally, delete the request
         RestClient.delete "#{@uri}/api/requests/request/#{@data['requestId']}"
-
       rescue Exception => e
         puts " #{e.response}".red
       end
