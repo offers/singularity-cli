@@ -206,7 +206,7 @@ module Singularity
           @port = @thisTask['mesosTask']['container']['docker']['portMappings'][0]['hostPort']
           # SSH into the machine
           sleep 3
-          exec "ssh -o LogLevel=quiet -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@#{@ip} -p #{@port} -v"
+          exec "ssh -o LogLevel=quiet -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@#{@ip} -p #{@port} -v -i ~/.ssh/vertive-use1.pem"
         else
           # or provide link to task in browser so we can see output
           puts " Deployed and running #{@data['command']} #{@data['arguments']}".green
