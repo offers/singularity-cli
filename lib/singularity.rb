@@ -186,13 +186,13 @@ module Singularity
         puts " Deploy SUCCEEDED.".green
 
         if @script == "ssh"
-          # SSH into box
           where = Dir.pwd.split('/').last
-          puts " SSHing into #{where}..."
+          puts " SSHing into #{where}...".light_blue
+
           # find the correct task so we can get IP/PORT
-          @thisTask = ''
-          while @thisTask == ''
+          begin
             # get active tasks until ours shows up
+            @thisTask = ''
             @tasks = RestClient.get "#{@uri}/api/tasks/active", :content_type => :json
             @tasks = JSON.parse(@tasks)
             @tasks.each do |entry|
@@ -200,24 +200,21 @@ module Singularity
                 @thisTask = entry
               end
             end
-          end
-          # get IP and PORT from task info
+          end until @thisTask != ''
+
           @ip = @thisTask['offer']['url']['address']['ip']
           @port = @thisTask['mesosTask']['container']['docker']['portMappings'][0]['hostPort']
-          # SSH into the machine
-          sleep 3
-          exec "ssh -o LogLevel=quiet -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@#{@ip} -p #{@port}"
+
+          # SSH into the machine (use 'system' so we return to this script to delete the request)
+          # uses "begin end until" because "system" will keep returning "false" unless the command exits with success
+          begin end until system "ssh -o LogLevel=quiet -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@#{@ip} -p #{@port}"
+
         else
-          # or provide link to task in browser so we can see output
           puts " Deployed and running #{@data['command']} #{@data['arguments']}".green
-
         end
-        # print history of task (stdout/stderr?)
-        history = RestClient.get "#{@uri}/history/task/#{@thisTask['taskId']}"
-        puts history
+          # finally, delete the request
+          RestClient.delete "#{@uri}/api/requests/request/#{@data['requestId']}"
 
-        # finally, delete the request
-        RestClient.delete "#{@uri}/api/requests/request/#{@data['requestId']}"
       rescue Exception => e
         puts " #{e.response}".red
       end
