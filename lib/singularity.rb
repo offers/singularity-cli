@@ -181,36 +181,43 @@ module Singularity
         end until @deployState['pendingDeployState']['currentDeployState'] != "SUCCEEDED"
         puts " Deploy succeeded.".green
 
-        if @script == "ssh"
-          where = Dir.pwd.split('/').last
-          puts " Opening a shell to #{where}, please wait a moment...".light_blue
-
-          # get active tasks until ours shows up so we can get IP/PORT
-          begin
-            @thisTask = ''
-            @tasks = RestClient.get "#{@uri}/api/tasks/active", :content_type => :json
-            @tasks = JSON.parse(@tasks)
-            @tasks.each do |entry|
-              if entry['taskRequest']['request']['id'] == @data['requestId']
-                @thisTask = entry
-              end
+        # get active tasks until ours shows up so we can get IP/PORT
+        begin
+          @thisTask = ''
+          @tasks = RestClient.get "#{@uri}/api/tasks/active", :content_type => :json
+          @tasks = JSON.parse(@tasks)
+          @tasks.each do |entry|
+            if entry['taskRequest']['request']['id'] == @data['requestId']
+              @thisTask = entry
             end
-          end until @thisTask != ''
+          end
+        end until @thisTask != ''
 
-          @ip = @thisTask['offer']['url']['address']['ip']
-          @port = @thisTask['mesosTask']['container']['docker']['portMappings'][0]['hostPort']
+        @ip = @thisTask['offer']['url']['address']['ip']
+        @port = @thisTask['mesosTask']['container']['docker']['portMappings'][0]['hostPort']
 
+        if @script == "ssh"
           # SSH into the machine
           # uses "begin end until" because "system" will keep returning "false" unless the command exits with success
           # this makes sure that the docker image has completely started and the SSH command succeeds
+          where = Dir.pwd.split('/').last
+          puts " Opening a shell to #{where}, please wait a moment...".light_blue
           begin end until system "ssh -o LogLevel=quiet -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@#{@ip} -p #{@port}"
 
         else
           puts " Deployed and running #{@data['command']} #{@data['arguments']}".green
         end
 
-          # finally, delete the request (which also deletes the corresponding task)
-          RestClient.delete "#{@uri}/api/requests/request/#{@data['requestId']}"
+        # need to wait for "task_finished" or something similar before asking for this sandbox info for non-ssh commands
+
+        # need to duplicate this for stderr
+        sandbox = RestClient.get "#{@uri}/api/sandbox/#{@thisTask['taskId']['id']}/read", {params: {path: "stdout", length: 30000, offset: 0}}
+        sandbox = JSON.parse(sandbox)
+        puts "stdout: ".green
+        puts sandbox['data']
+
+        # finally, delete the request (which also deletes the corresponding task)
+        RestClient.delete "#{@uri}/api/requests/request/#{@data['requestId']}"
 
       rescue Exception => e
         puts " #{e.response}".red
