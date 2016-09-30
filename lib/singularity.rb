@@ -149,7 +149,7 @@ module Singularity
         resp = RestClient.get "#{@uri}/api/requests/request/#{@data['id']}"
         JSON.parse(resp)['state'] == 'PAUSED'
       rescue
-        puts " CREATING...".blue
+        print " Deploying request...".light_blue
         false
       end
     end
@@ -157,7 +157,7 @@ module Singularity
     def runner
       begin
         if is_paused()
-          puts " PAUSED, SKIPPING".yellow
+          puts " PAUSED, SKIPPING.".yellow
           return
         else
           # create or update the request
@@ -178,20 +178,15 @@ module Singularity
         begin
           @deployState = RestClient.get "#{@uri}/api/requests/request/#{@data['requestId']}", :content_type => :json
           @deployState = JSON.parse(@deployState)
-          print " Deploy state ".yellow
-          print @deployState['pendingDeployState']['currentDeployState'].yellow
-          puts "...".yellow
-          sleep 1
         end until @deployState['pendingDeployState']['currentDeployState'] != "SUCCEEDED"
-        puts " Deploy SUCCEEDED.".green
+        puts " Deploy succeeded.".green
 
         if @script == "ssh"
           where = Dir.pwd.split('/').last
-          puts " SSHing into #{where}...".light_blue
+          puts " Opening a shell to #{where}, please wait a moment...".light_blue
 
-          # find the correct task so we can get IP/PORT
+          # get active tasks until ours shows up so we can get IP/PORT
           begin
-            # get active tasks until ours shows up
             @thisTask = ''
             @tasks = RestClient.get "#{@uri}/api/tasks/active", :content_type => :json
             @tasks = JSON.parse(@tasks)
@@ -205,14 +200,16 @@ module Singularity
           @ip = @thisTask['offer']['url']['address']['ip']
           @port = @thisTask['mesosTask']['container']['docker']['portMappings'][0]['hostPort']
 
-          # SSH into the machine (use 'system' so we return to this script to delete the request)
+          # SSH into the machine
           # uses "begin end until" because "system" will keep returning "false" unless the command exits with success
+          # this makes sure that the docker image has completely started and the SSH command succeeds
           begin end until system "ssh -o LogLevel=quiet -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@#{@ip} -p #{@port}"
 
         else
           puts " Deployed and running #{@data['command']} #{@data['arguments']}".green
         end
-          # finally, delete the request
+
+          # finally, delete the request (which also deletes the corresponding task)
           RestClient.delete "#{@uri}/api/requests/request/#{@data['requestId']}"
 
       rescue Exception => e
