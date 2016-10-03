@@ -209,30 +209,32 @@ module Singularity
           @lastErrLine = ''
           begin
             # get most recent task state
+            # need to wait for "task_running" before we can ask for STDOUT/STDERR
             @taskState = JSON.parse(RestClient.get "#{@uri}/api/history/task/#{@thisTask['taskId']['id']}")
             @taskState["taskUpdates"].each do |update|
               @taskState = update['taskState']
             end
-
-            # need to wait for "task_running" before we can ask for STDOUT/STDERR
             if @taskState == "TASK_RUNNING"
+              # print stdout
               @stdout = JSON.parse(RestClient.get "#{@uri}/api/sandbox/#{@thisTask['taskId']['id']}/read", {params: {path: "stdout", length: 30000, offset: @stdoutOffset}})['data']
               @stdoutOffset += @stdout.length
-              @stdout = @stdout.split("\n")
-              if @stdout.any?
-                if @lastOutLine.include? @stdout[0]
-                  @stdout.shift
+              @stdout = @stdout.split("\n") # split stdout string into array
+              if @stdout.any? # are there any elements?
+                if @lastOutLine.include? @stdout[0] # if the last line printed includes the first line in this new array
+                  @stdout.shift # remove the first line in this new array
                 end
-                if !@stdout.empty?
-                  if @stdout[0].length > 0
+                if !@stdout.empty? # make sure it isn't empty because we might have just shifted the only element off
+                  if @stdout[0].length > 0 # make sure that the first element has length
                     @stdout.each do |i|
-                      puts i.light_cyan
+                      puts i.light_cyan # print them all
                     end
                   end
                 end
-                @lastOutLine = @stdout.last
+                @lastOutLine = @stdout.last # set the new lastOutLine so we can check that they don't overlap on next iteration
               end
 
+              # print stderr
+              # almost duplicate code / process as the above
               @stderr = JSON.parse(RestClient.get "#{@uri}/api/sandbox/#{@thisTask['taskId']['id']}/read", {params: {path: "stderr", length: 30000, offset: @stderrOffset}})['data']
               @stderrOffset += @stderr.length
               @stderr = @stderr.split("\n")
