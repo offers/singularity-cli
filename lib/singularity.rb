@@ -178,8 +178,7 @@ module Singularity
         # get active tasks until ours shows up so we can get IP/PORT
         begin
           @thisTask = ''
-          @tasks = RestClient.get "#{@uri}/api/tasks/active", :content_type => :json
-          @tasks = JSON.parse(@tasks)
+          @tasks = JSON.parse(RestClient.get "#{@uri}/api/tasks/active", :content_type => :json)
           @tasks.each do |entry|
             if entry['taskRequest']['request']['id'] == @data['requestId']
               @thisTask = entry
@@ -195,31 +194,65 @@ module Singularity
           # this makes sure that the docker image has completely started and the SSH command succeeds
           where = Dir.pwd.split('/').last
           puts " Opening a shell to #{where}, please wait a moment...".light_blue
-          puts " STDOUT / STDERR will print to console when session is over.".light_blue
           begin end until system "ssh -o LogLevel=quiet -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@#{@ip} -p #{@port}"
         else
           puts " Deployed and running #{@data['command']} #{@data['arguments']}".light_green
+          print " STDOUT".light_cyan
+          print " and"
+          print " STDERR".light_magenta
+          puts ":"
+
+          # output STDOUT / STDERR to shell
+          @stdoutOffset = 0
+          @stderrOffset = 0
+          @lastOutLine = ''
+          @lastErrLine = ''
+          begin
+            # get most recent task state
+            @taskState = JSON.parse(RestClient.get "#{@uri}/api/history/task/#{@thisTask['taskId']['id']}")
+            @taskState["taskUpdates"].each do |update|
+              @taskState = update['taskState']
+            end
+
+            # need to wait for "task_running" before we can ask for STDOUT/STDERR
+            if @taskState == "TASK_RUNNING"
+              @stdout = JSON.parse(RestClient.get "#{@uri}/api/sandbox/#{@thisTask['taskId']['id']}/read", {params: {path: "stdout", length: 30000, offset: @stdoutOffset}})['data']
+              @stdoutOffset += @stdout.length
+              @stdout = @stdout.split("\n")
+              if @stdout.any?
+                if @lastOutLine.include? @stdout[0]
+                  @stdout.shift
+                end
+                if !@stdout.empty?
+                  if @stdout[0].length > 0
+                    @stdout.each do |i|
+                      puts i.light_cyan
+                    end
+                  end
+                end
+                @lastOutLine = @stdout.last
+              end
+
+              @stderr = JSON.parse(RestClient.get "#{@uri}/api/sandbox/#{@thisTask['taskId']['id']}/read", {params: {path: "stderr", length: 30000, offset: @stderrOffset}})['data']
+              @stderrOffset += @stderr.length
+              @stderr = @stderr.split("\n")
+              if @stderr.any?
+                if @lastErrLine.include? @stderr[0]
+                  @stderr.shift
+                end
+                if !@stderr.empty?
+                  if @stderr[0].length > 0
+                    @stderr.each do |i|
+                      puts i.light_magenta
+                    end
+                  end
+                end
+                @lastErrLine = @stderr.last
+              end
+
+            end
+          end until @taskState == "TASK_FINISHED"
         end
-
-        # need to wait for "task_finished" or "task_running & ssh" before we can ask for STDOUT/STDERR
-        begin
-          @taskState = RestClient.get "#{@uri}/api/history/task/#{@thisTask['taskId']['id']}"
-          @taskState = JSON.parse(@taskState)
-          @taskState["taskUpdates"].each do |update|
-            @taskState = update['taskState']
-          end
-        end until @taskState == "TASK_FINISHED" || (@taskState == "TASK_RUNNING" and @script == "ssh")
-
-        # output STDOUT / STDERR to shell
-        puts ""
-        stdout = RestClient.get "#{@uri}/api/sandbox/#{@thisTask['taskId']['id']}/read", {params: {path: "stdout", length: 30000, offset: 0}}
-        stdout = JSON.parse(stdout)
-        puts "stdout: ".cyan
-        puts stdout['data'].light_cyan
-        stderr = RestClient.get "#{@uri}/api/sandbox/#{@thisTask['taskId']['id']}/read", {params: {path: "stderr", length: 30000, offset: 0}}
-        stderr = JSON.parse(stderr)
-        puts "stderr: ".red
-        puts stderr['data'].light_magenta
 
         # finally, delete the request (which also deletes the corresponding task)
         RestClient.delete "#{@uri}/api/requests/request/#{@data['requestId']}"
