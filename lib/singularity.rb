@@ -205,8 +205,6 @@ module Singularity
           # output STDOUT / STDERR to shell
           @stdoutOffset = 0
           @stderrOffset = 0
-          @lastOutLine = ''
-          @lastErrLine = ''
           begin
             # get most recent task state
             # need to wait for "task_running" before we can ask for STDOUT/STDERR
@@ -217,41 +215,18 @@ module Singularity
             if @taskState == "TASK_RUNNING"
               # print stdout
               @stdout = JSON.parse(RestClient.get "#{@uri}/api/sandbox/#{@thisTask['taskId']['id']}/read", {params: {path: "stdout", length: 30000, offset: @stdoutOffset}})['data']
-              @stdoutOffset += @stdout.length
-              @stdout = @stdout.split("\n") # split stdout string into array
-              if @stdout.any? # are there any elements?
-                if @lastOutLine.include? @stdout[0] # if the last line printed includes the first line in this new array
-                  @stdout.shift # remove the first line in this new array
-                end
-                if !@stdout.empty? # make sure it isn't empty because we might have just shifted the only element off
-                  if @stdout[0].length > 0 # make sure that the first element has length
-                    @stdout.each do |i|
-                      puts i.light_cyan # print them all
-                    end
-                  end
-                end
-                @lastOutLine = @stdout.last # set the new lastOutLine so we can check that they don't overlap on next iteration
+              outLength = @stdout.bytes.to_a.size
+              if @stdout.length > 0
+                print @stdout.light_cyan
+                @stdoutOffset += outLength
               end
-
               # print stderr
-              # almost duplicate code / process as the above
               @stderr = JSON.parse(RestClient.get "#{@uri}/api/sandbox/#{@thisTask['taskId']['id']}/read", {params: {path: "stderr", length: 30000, offset: @stderrOffset}})['data']
-              @stderrOffset += @stderr.length
-              @stderr = @stderr.split("\n")
-              if @stderr.any?
-                if @lastErrLine.include? @stderr[0]
-                  @stderr.shift
-                end
-                if !@stderr.empty?
-                  if @stderr[0].length > 0
-                    @stderr.each do |i|
-                      puts i.light_magenta
-                    end
-                  end
-                end
-                @lastErrLine = @stderr.last
+              errLength = @stderr.bytes.to_a.size
+              if @stderr.length > 0
+                print @stderr.light_magenta
+                @stderrOffset += errLength
               end
-
             end
           end until @taskState == "TASK_FINISHED"
         end
