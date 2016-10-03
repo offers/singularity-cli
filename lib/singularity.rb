@@ -149,7 +149,7 @@ module Singularity
         resp = RestClient.get "#{@uri}/api/requests/request/#{@data['id']}"
         JSON.parse(resp)['state'] == 'PAUSED'
       rescue
-        print " Deploying request...".light_blue
+        print " Deploying request...".light_green
         false
       end
     end
@@ -173,12 +173,6 @@ module Singularity
          'unpauseOnSuccessfulDeploy' => false
         }
         RestClient.post "#{@uri}/api/deploys", @deploy.to_json, :content_type => :json
-
-        # wait until deployment completes and succeeds
-        begin
-          @deployState = RestClient.get "#{@uri}/api/requests/request/#{@data['requestId']}", :content_type => :json
-          @deployState = JSON.parse(@deployState)
-        end until @deployState['pendingDeployState']['currentDeployState'] != "SUCCEEDED"
         puts " Deploy succeeded.".green
 
         # get active tasks until ours shows up so we can get IP/PORT
@@ -192,29 +186,40 @@ module Singularity
             end
           end
         end until @thisTask != ''
-
         @ip = @thisTask['offer']['url']['address']['ip']
         @port = @thisTask['mesosTask']['container']['docker']['portMappings'][0]['hostPort']
 
+        # SSH into the machine
         if @script == "ssh"
-          # SSH into the machine
           # uses "begin end until" because "system" will keep returning "false" unless the command exits with success
           # this makes sure that the docker image has completely started and the SSH command succeeds
           where = Dir.pwd.split('/').last
           puts " Opening a shell to #{where}, please wait a moment...".light_blue
+          puts " STDOUT / STDERR will print to console when session is over.".light_blue
           begin end until system "ssh -o LogLevel=quiet -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@#{@ip} -p #{@port}"
-
         else
-          puts " Deployed and running #{@data['command']} #{@data['arguments']}".green
+          puts " Deployed and running #{@data['command']} #{@data['arguments']}".light_green
         end
 
-        # need to wait for "task_finished" or something similar before asking for this sandbox info for non-ssh commands
+        # need to wait for "task_finished" or "task_running & ssh" before we can ask for STDOUT/STDERR
+        begin
+          @taskState = RestClient.get "#{@uri}/api/history/task/#{@thisTask['taskId']['id']}"
+          @taskState = JSON.parse(@taskState)
+          @taskState["taskUpdates"].each do |update|
+            @taskState = update['taskState']
+          end
+        end until @taskState == "TASK_FINISHED" || (@taskState == "TASK_RUNNING" and @script == "ssh")
 
-        # need to duplicate this for stderr
-        sandbox = RestClient.get "#{@uri}/api/sandbox/#{@thisTask['taskId']['id']}/read", {params: {path: "stdout", length: 30000, offset: 0}}
-        sandbox = JSON.parse(sandbox)
-        puts "stdout: ".green
-        puts sandbox['data']
+        # output STDOUT / STDERR to shell
+        puts ""
+        stdout = RestClient.get "#{@uri}/api/sandbox/#{@thisTask['taskId']['id']}/read", {params: {path: "stdout", length: 30000, offset: 0}}
+        stdout = JSON.parse(stdout)
+        puts "stdout: ".cyan
+        puts stdout['data'].light_cyan
+        stderr = RestClient.get "#{@uri}/api/sandbox/#{@thisTask['taskId']['id']}/read", {params: {path: "stderr", length: 30000, offset: 0}}
+        stderr = JSON.parse(stderr)
+        puts "stderr: ".red
+        puts stderr['data'].light_magenta
 
         # finally, delete the request (which also deletes the corresponding task)
         RestClient.delete "#{@uri}/api/requests/request/#{@data['requestId']}"
