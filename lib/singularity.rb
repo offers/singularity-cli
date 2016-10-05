@@ -79,10 +79,10 @@ module Singularity
 
   class Runner
     def initialize(script)
-      #########################################################
-      # TODO
-      # check to see that .mescal.json and mesos-deploy.yml exist
-      #########################################################
+      if !File.file?("mesos-deploy.yml") or !File.file?(".mescal.json")
+        puts "Please do this command from a project directory (where mesos-deploy.yml and .mescal.json exist)"
+      end
+
       @script = script
       # read .mescal.json for ssh command, image, release number, cpus, mem
       @configData = JSON.parse(ERB.new(open(File.join(Dir.pwd, ".mescal.json")).read).result(Request.new.get_binding))
