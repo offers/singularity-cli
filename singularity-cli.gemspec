@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
     s.name        = 'singularity-cli'
-    s.version     = '0.3.2'
+    s.version     = '0.3.3'
     s.licenses    = ['MIT']
     s.summary     = "singularity deploy and delete command line tools"
     s.description = "Usage: [singularity delete <uri> <file>] or [singularity deploy <uri> <file> <release>]"
