@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 require 'singularity'
 
-# passes "--help" if no arguments given which will result in the "else" case statement being executed, printing proper usage
+# passes "--help" if no arguments given which will result printing usage
 ARGV << '--help' if ARGV.empty?
 
 def print_usage
