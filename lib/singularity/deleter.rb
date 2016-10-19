@@ -10,7 +10,8 @@ module Singularity
         task_id = "#{@file}".gsub(/\.\/singularity\//, "").gsub(/\.json/, "")
         # delete the request
         RestClient.delete "#{@uri}/api/requests/request/#{task_id}"
-        puts "#{task_id} DELETED"
+        print "#{task_id}".light_blue
+        puts ' DELETED'.red
       rescue
         puts "#{task_id} #{$!.response}"
       end
