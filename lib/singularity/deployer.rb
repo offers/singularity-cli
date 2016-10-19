@@ -2,28 +2,16 @@ module Singularity
   class Deployer
     def initialize(uri, file, release)
       @uri = uri
-      @file = file
-      @release = release
       @config = ERB.new(open(file).read)
-      @r = Request.new
-      @r.release = @release
-      @data = JSON.parse(@config.result(@r.get_binding))
+      @request = Request.new
+      @request.release = release
+      @data = JSON.parse(@config.result(@request.get_binding))
       print @data['id']
-    end
-
-    def is_paused
-      begin
-        resp = RestClient.get "#{@uri}/api/requests/request/#{@data['id']}"
-        JSON.parse(resp)['state'] == 'PAUSED'
-      rescue
-        print " CREATING...".blue
-        false
-      end
     end
 
     def deploy
       begin
-        if is_paused()
+        if @request.is_paused(@uri, @data['id'])
           puts " PAUSED, SKIPPING".yellow
           return
         else
