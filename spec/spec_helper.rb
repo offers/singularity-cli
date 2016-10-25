@@ -8,12 +8,7 @@ RSpec.configure do |config|
   config.before(:all) do
     @test_url = 'www.example.com'
     @file = 'TestRequest.json'
-    WebMock.stub_request(:get, /.*/).
-      to_return(:status => 200, :body => "", :headers => {})
-    WebMock.stub_request(:post, /.*/).
-      to_return(:status => 200, :body => "", :headers => {})
-    WebMock.stub_request(:delete, /.*/).
-      to_return(:status => 200, :body => "", :headers => {})
+    @test_id = 'testId'
   end
 
   config.expect_with :rspec do |expectations|

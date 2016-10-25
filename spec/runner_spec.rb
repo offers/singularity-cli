@@ -1,3 +1,5 @@
+require 'spec_helper'
+
 module Singularity
   class Runner
     def initialize(script)

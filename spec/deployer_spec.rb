@@ -1,3 +1,5 @@
+require 'spec_helper'
+
 module Singularity
   class Deployer
     def initialize(uri, file, release)
