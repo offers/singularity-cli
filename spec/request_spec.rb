@@ -12,7 +12,7 @@ module Singularity
 
       @response = @request.is_paused
 
-      it "should make a GET request"
+      it "should make a GET request" do
         expect(WebMock).to have_requested(:get, @test_url+'/api/requests/request/'+@test_id)
       end
       it "should find PAUSED == true" do
@@ -26,7 +26,7 @@ module Singularity
 
       @response = @request.is_paused
       
-      it "should make a GET request"
+      it "should make a GET request" do
         expect(WebMock).to have_requested(:get, @test_url+'/api/requests/request/'+@test_id)
       end
       it "should find PAUSED == false" do
