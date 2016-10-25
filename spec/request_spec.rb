@@ -11,7 +11,7 @@ module Singularity
         to_return(body: hash_including({state: 'PAUSED'}))
       it "should find paused == true" do
         response = @request.is_paused
-        expect(WebMock).to have_requested(:get, @test_url+'/api/requests/request/'+@test_id)).and 
+        expect(WebMock).to have_requested(:get, @test_url+'/api/requests/request/'+@test_id).and 
         expect(response).to equal(true)
       end
     end
@@ -21,7 +21,7 @@ module Singularity
         to_return(body: hash_including({state: 'RUNNING'}))
       it "should find paused == false" do
         response = @request.is_paused
-        expect(WebMock).to have_requested(:get, @test_url+'/api/requests/request/'+@test_id)).and
+        expect(WebMock).to have_requested(:get, @test_url+'/api/requests/request/'+@test_id).and
         expect(response).to equal(false)
       end
     end
