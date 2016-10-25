@@ -6,7 +6,7 @@ require 'singularity'
 
 RSpec.configure do |config|
   config.before(:all) do
-    @test_url = 'www.example.com'
+    @test_url = 'http://www.example.com'
     @file = 'TestRequest.json'
     @test_id = 'testId'
   end
