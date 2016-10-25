@@ -7,7 +7,7 @@ module Singularity
     }
 
     context 'when paused' do
-      stub_request(:get, @test_url).
+      WebMock.stub_request(:get, @test_url).
         to_return(body: hash_including({state: 'PAUSED'}))
       it "should find paused == true" do
         response = @request.is_paused
@@ -17,7 +17,7 @@ module Singularity
     end
 
     context 'when not paused' do
-      stub_request(:get, @test_url).
+      WebMock.stub_request(:get, @test_url).
         to_return(body: hash_including({state: 'RUNNING'}))
       it "should find paused == false" do
         response = @request.is_paused
