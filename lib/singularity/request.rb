@@ -2,19 +2,12 @@ module Singularity
   class Request
     attr_accessor :release, :cpus, :mem, :envs, :schedule, :cmd, :arguments, :request_id, :repo, :release_string, :release_id_string
 
-    def initialize(uri, data_id)
+    def initialize(uri)
       @uri = uri
-      @data_id = data_id
     end
 
-    def is_paused(uri, data_id)
-      resp = RestClient.get "#{@uri}/api/requests/request/#{@data_id}"
-      if (JSON.parse(resp)['state'] != 'PAUSED')
-        print ' Deploying request...'.light_green
-        false
-      else
-        true
-      end
+    def is_paused(data_id)
+      return JSON.parse(RestClient.get "#{@uri}/api/requests/request/#{data_id}")['state'] == 'PAUSED'
     end
 
     def get_binding

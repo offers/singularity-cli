@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 require 'singularity'
+require 'json'
 
 # passes "--help" if no arguments given which will result printing usage
 ARGV << '--help' if ARGV.empty?
@@ -29,6 +30,8 @@ END
 action = ARGV[0]
 uri = ARGV[1]
 file = ARGV[2]
+@config = ERB.new(open(file).read)
+@data = JSON.parse(@config.result(@request.get_binding))
 
 case action
   when "delete"

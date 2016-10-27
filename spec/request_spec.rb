@@ -2,35 +2,37 @@ require 'spec_helper'
 
 module Singularity
   describe Request do
-    before(:each) {
-      @request = Request.new(@test_url,@test_id)
+    before {
+      @request = Request.new(@test_url)
     }
 
     context 'when paused' do
-      WebMock.stub_request(:get, @test_url).
-        to_return(body: hash_including({state: 'PAUSED'}))
-
-      @response = @request.is_paused
+      before {
+        WebMock.stub_request(:get, /.*/).
+          to_return(:body => '{"state":"PAUSED"}')
+        @response = @request.is_paused(@test_id)
+      }
 
       it "should make a GET request" do
         expect(WebMock).to have_requested(:get, @test_url+'/api/requests/request/'+@test_id)
       end
       it "should find PAUSED == true" do
-        expect(response).to equal(true)
-      end 
+        expect(@response).to equal(true)
+      end
     end
 
     context 'when not paused' do
-      WebMock.stub_request(:get, @test_url).
-        to_return(body: hash_including({state: 'RUNNING'}))
+      before {
+        WebMock.stub_request(:get, /.*/).
+          to_return(:body => '{"state":"RUNNING"}')
+        @response = @request.is_paused(@test_id)
+      }
 
-      @response = @request.is_paused
-      
       it "should make a GET request" do
         expect(WebMock).to have_requested(:get, @test_url+'/api/requests/request/'+@test_id)
       end
       it "should find PAUSED == false" do
-        expect(response).to equal(false)
+        expect(@response).to equal(false)
       end
     end
 

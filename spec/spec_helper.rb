@@ -7,8 +7,9 @@ require 'singularity'
 RSpec.configure do |config|
   config.before(:all) do
     @test_url = 'www.example.com'
-    @file = 'TestRequest.json'
+    @test_file = 'TestRequest.json'
     @test_id = 'testId'
+    @test_release = 'r99'
   end
 
   config.expect_with :rspec do |expectations|

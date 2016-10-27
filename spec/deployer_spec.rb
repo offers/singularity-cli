@@ -1,50 +1,29 @@
 require 'spec_helper'
 
 module Singularity
-  class Deployer
-    def initialize(uri, file, release)
-      @uri = uri
-      @file = file
-      @release = release
-      @config = ERB.new(open(file).read)
-      @r = Request.new
-      @r.release = @release
-      @data = JSON.parse(@config.result(@r.get_binding))
-      print @data['id']
-    end
+  describe Deployer do
+    before {
+      @deployer = Deployer.new(@test_url, @test_file, @test_release)
+    }
 
-    def is_paused
-      begin
-        resp = RestClient.get "#{@uri}/api/requests/request/#{@data['id']}"
-        JSON.parse(resp)['state'] == 'PAUSED'
-      rescue
-        print " CREATING...".blue
-        false
+
+    context 'when request is paused' do
+      before {
+        WebMock.stub_request(:get, /.*/).
+          to_return(:body => '{"state":"PAUSED"}')
+      }
+      it 'should check if the request is paused' do
+        expect(WebMock).to have_requested(:get, @test_url+'/api/requests/request/'+@test_id)
+      end
+
+      it 'should not make any POST requests' do
+        expect(WebMock).should_not have_requested(:post, /.*/)
       end
     end
 
-    def deploy
-      begin
-        if is_paused()
-          puts " PAUSED, SKIPPING".yellow
-          return
-        else
-          # create or update the request
-          resp = RestClient.post "#{@uri}/api/requests", @data.to_json, :content_type => :json
-        end
-        # deploy the request
-        @data['requestId'] = @data['id']
-        @data['id'] = "#{@release}.#{Time.now.to_i}"
-        deploy = {
-         'deploy' => @data,
-         'user' => `whoami`.chomp,
-         'unpauseOnSuccessfulDeploy' => false
-        }
-        resp = RestClient.post "#{@uri}/api/deploys", deploy.to_json, :content_type => :json
-        puts " DEPLOYED".green
-      rescue Exception => e
-        puts " #{e.response}".red
-      end
+    context 'when request is not paused' do
+
     end
+
   end
 end

@@ -2,32 +2,32 @@ module Singularity
   class Deployer
     def initialize(uri, file, release)
       @uri = uri
-      @config = ERB.new(open(file).read)
-      @request = Request.new
+
       @request.release = release
-      @data = JSON.parse(@config.result(@request.get_binding))
-      print @data['id']
+
+      puts @data['id']
     end
 
     def deploy
       begin
-        if @request.is_paused(@uri, @data['id'])
-          puts " PAUSED, SKIPPING".yellow
+        if @request.is_paused(@data['id'])
+          puts ' PAUSED, SKIPPING.'
           return
         else
+          puts ' Deploying request...'.light_green
           # create or update the request
-          resp = RestClient.post "#{@uri}/api/requests", @data.to_json, :content_type => :json
+          RestClient.post "#{@uri}/api/requests", @data.to_json, :content_type => :json
+          # deploy the request
+          @data['requestId'] = @data['id']
+          @data['id'] = "#{@release}.#{Time.now.to_i}"
+          deploy = {
+           'deploy' => @data,
+           'user' => `whoami`.chomp,
+           'unpauseOnSuccessfulDeploy' => false
+          }
+          RestClient.post "#{@uri}/api/deploys", deploy.to_json, :content_type => :json
+          puts " DEPLOYED".green
         end
-        # deploy the request
-        @data['requestId'] = @data['id']
-        @data['id'] = "#{@release}.#{Time.now.to_i}"
-        deploy = {
-         'deploy' => @data,
-         'user' => `whoami`.chomp,
-         'unpauseOnSuccessfulDeploy' => false
-        }
-        resp = RestClient.post "#{@uri}/api/deploys", deploy.to_json, :content_type => :json
-        puts " DEPLOYED".green
       rescue Exception => e
         puts " #{e.response}".red
       end
