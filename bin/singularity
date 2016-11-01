@@ -28,20 +28,23 @@ END
   end
 
 action = ARGV[0]
-uri = ARGV[1]
-file = ARGV[2]
-@config = ERB.new(open(file).read)
-@data = JSON.parse(@config.result(@request.get_binding))
+$uri = ARGV[1]
+$file = ARGV[2]
+
+$request = Request.new
+@config = ERB.new(open($file).read)
+$data = JSON.parse(@config.result($request.get_binding))
+
 
 case action
   when "delete"
     print_usage unless ARGV.size == 3
-    Singularity::Deleter.new(uri,file).delete
+    Singularity::Deleter.new.delete
 
   when "deploy"
     print_usage unless ARGV.size == 4
-    release = ARGV[3]
-    Singularity::Deployer.new(uri,file,release).deploy
+    $release = ARGV[3]
+    Singularity::Deployer.new.deploy
 
   when "run"
     # remove the word "run" from ARGV, pass the remainder to Runner
@@ -57,7 +60,7 @@ case action
     Singularity::Runner.new("ssh").runner
 
   else
-      print_usage
+    print_usage
 end
 
 

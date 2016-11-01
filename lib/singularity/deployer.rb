@@ -1,31 +1,23 @@
 module Singularity
   class Deployer
-    def initialize(uri, file, release)
-      @uri = uri
-
-      @request.release = release
-
-      puts @data['id']
-    end
-
     def deploy
       begin
-        if @request.is_paused(@data['id'])
+        if $request.is_paused($data['id'])
           puts ' PAUSED, SKIPPING.'
           return
         else
           puts ' Deploying request...'.light_green
           # create or update the request
-          RestClient.post "#{@uri}/api/requests", @data.to_json, :content_type => :json
+          RestClient.post "#{$uri}/api/requests", $data.to_json, :content_type => :json
           # deploy the request
-          @data['requestId'] = @data['id']
-          @data['id'] = "#{@release}.#{Time.now.to_i}"
+          $data['requestId'] = $data['id']
+          $data['id'] = "#{$release}.#{Time.now.to_i}"
           deploy = {
-           'deploy' => @data,
+           'deploy' => $data,
            'user' => `whoami`.chomp,
            'unpauseOnSuccessfulDeploy' => false
           }
-          RestClient.post "#{@uri}/api/deploys", deploy.to_json, :content_type => :json
+          RestClient.post "#{$uri}/api/deploys", deploy.to_json, :content_type => :json
           puts " DEPLOYED".green
         end
       rescue Exception => e
