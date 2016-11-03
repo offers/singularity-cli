@@ -9,26 +9,25 @@ module Singularity
 
     context 'when request is paused' do
       before {
-        WebMock.stub_request(:get, /.*/).
-          to_return(:body => '{"state":"PAUSED"}')
+        WebMock.stub_request(:get, /.*/).to_return(:body => '{"state":"PAUSED"}')
         WebMock.stub_request(:post, /.*/)
         @deployer.deploy
       }
+
       it 'should check if the request is paused' do
         expect(WebMock).to have_requested(:get, $uri+'/api/requests/request/'+$id)
       end
 
       it 'should not make any POST requests' do
-        expect(WebMock).should_not have_requested(:post, /.*/)
+        expect(WebMock).not_to have_requested(:post, /.*/)
       end
     end
 
-    context 'when request is not paused' do
+    context 'when request is NOT paused' do
       before {
-        WebMock.stub_request(:get, /.*/).
-          to_return(:body => '{"state":"RUNNING"}')
+        WebMock.stub_request(:get, /.*/).to_return(:body => '{"state":"RUNNING"}')
         WebMock.stub_request(:post, /.*/)
-        @deployer.deploy
+        @hash = @deployer.deploy
       }
       it 'should check if the request is paused' do
         expect(WebMock).to have_requested(:get, $uri+'/api/requests/request/'+$id)
@@ -36,12 +35,15 @@ module Singularity
 
       it 'should create or update the request' do
         expect(WebMock).to have_requested(:post, $uri+'/api/requests').
-          with(body: {data: {id: $id}})
+          with(body: hash_including({'id' => $id}))
       end
 
       it 'should deploy the request' do
-        expect(WebMock).to have_requested(:post, $uri+'/api/deploys').
-          with(body: {data: {requestId: $id}})
+        expect(WebMock).to have_requested(:post, $uri+'/api/deploys')
+      end
+
+      it 'should check that correct requestId was deployed' do
+        expect(@resp[:deploy][:requestId]).to eq($id)
       end
 
     end

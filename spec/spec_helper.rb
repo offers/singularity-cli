@@ -10,7 +10,9 @@ RSpec.configure do |config|
     $file = 'TestRequest.json'
     $id = 'testId'
     $release = 'r99'
-    $data = {id: $id}
+  end
+  config.before(:each) do
+    $data = {'id' => $id}
   end
 
   config.expect_with :rspec do |expectations|

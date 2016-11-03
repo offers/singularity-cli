@@ -17,7 +17,7 @@ module Singularity
            'user' => `whoami`.chomp,
            'unpauseOnSuccessfulDeploy' => false
           }
-          RestClient.post "#{$uri}/api/deploys", deploy.to_json, :content_type => :json
+          @resp = RestClient.post "#{$uri}/api/deploys", deploy.to_json, :content_type => :json
           puts " DEPLOYED".green
         end
       rescue Exception => e
