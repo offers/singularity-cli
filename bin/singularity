@@ -28,36 +28,40 @@ END
   end
 
 action = ARGV[0]
-$uri = ARGV[1]
-$file = ARGV[2]
+$file = ARGV[1]
 
+if !File.file?('mesos-deploy.yml') or !File.file?('.mescal.json')
+  puts 'Please do this command from a project directory (where both mesos-deploy.yml and .mescal.json exist)'
+  return
+end
+
+mesosDeployYml = YAML.load_file(File.join(Dir.pwd, 'mesos-deploy.yml'))
+$uri = mesosDeployYml['singularity_url']
 $request = Request.new
-@config = ERB.new(open($file).read)
-$data = JSON.parse(@config.result($request.get_binding))
-
+$data = JSON.parse(ERB.new(open($file).read).result($request.get_binding))
 
 case action
   when "delete"
-    print_usage unless ARGV.size == 3
+    #print_usage unless ARGV.size == 3
     Singularity::Deleter.new.delete
 
   when "deploy"
-    print_usage unless ARGV.size == 4
+    #print_usage unless ARGV.size == 4
     $release = ARGV[3]
     Singularity::Deployer.new.deploy
 
   when "run"
     # remove the word "run" from ARGV, pass the remainder to Runner
     ARGV.shift
-    Singularity::Runner.new(ARGV).runner
+    Singularity::Runner.new(ARGV).run
 
   when "runx"
     # this option is to skip the use of /sbin/my_init
     # (some commands won't run correctly when both are used)
-    Singularity::Runner.new(ARGV).runner
+    Singularity::Runner.new(ARGV).run
 
   when "ssh"
-    Singularity::Runner.new("ssh").runner
+    Singularity::Runner.new("ssh").run
 
   else
     print_usage

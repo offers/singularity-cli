@@ -1,27 +1,34 @@
 module Singularity
   class Runner
-    def initialize(script)
-      if !File.file?('mesos-deploy.yml') or !File.file?('.mescal.json')
-        puts 'Please do this command from a project directory (where mesos-deploy.yml and .mescal.json exist)'
+    def initialize(commands)
+      @commands = commands
+      # establish 'id', 'command', and 'args' for filling in the @data hash below
+      commandId = @commands.join('-').tr('@/\*?% []#$', '_')
+      args = ''
+      case @commands[0]
+        when 'ssh'
+          # the command becomes running the ssh bootstrap script
+          commandId = @directoryName + '_SSH'
+          command = "#{@mescaljson['sshCmd']}"
+        when 'runx'
+          # if 'runx' is passed, skip use of /sbin/my_init
+          command = @commands[1]
+          @commands.shift.each { |i| args.push i }
+        else
+          # else join /sbin/my_init with your commands
+          command = '/sbin/my_init'
+          args = '--'
+          @commands.each { |i| args.push i }
       end
-
-      @script = script
-      # read .mescal.json for ssh command, image, release number, cpus, mem
-      @configData = JSON.parse(ERB.new(open(File.join(Dir.pwd, '.mescal.json')).read).result(Request.new.get_binding))
-      @sshCmd = @configData['sshCmd']
-      @image = @configData['image'].split(':')[0]
-      @release = @configData['image'].split(':')[1]
-
-      # read mesos-deploy.yml for singularity url
-      @mesosDeployConfig = YAML.load_file(File.join(Dir.pwd, 'mesos-deploy.yml'))
-      @uri = @mesosDeployConfig['singularity_url']
 
       # create request/deploy json data
       @data = {
-        'command' => '/sbin/my_init',
+        'id' => "#{commandId}",
+        'command' => "#{command}",
+        'arguments' => "#{args}",
         'resources' => {
-          'memoryMb' => @configData['mem'],
-          'cpus' => @configData['cpus'],
+          'memoryMb' => @mescaljson['mem'],
+          'cpus' => @mescaljson['cpus'],
           'numPorts' => 1
         },
         'env' => {
@@ -31,7 +38,7 @@ module Singularity
         'containerInfo' => {
           'type' => 'DOCKER',
           'docker' => {
-            'image' => @configData['image'],
+            'image' => @mescaljson['image'],
             'network' => 'BRIDGE',
             'portMappings' => [{
               'containerPortType' => 'LITERAL',
@@ -42,64 +49,13 @@ module Singularity
           }
         }
       }
-      # either we typed 'singularity ssh'
-      if @script == 'ssh'
-        @data['id'] = Dir.pwd.split('/').last + '_SSH'
-        @data['command'] = "#{@sshCmd}"
-      # or we passed a script/commands to 'singularity run'
-      else
-        # if we passed "runx", then skip use of /sbin/my_init
-        if @script[0] == 'runx'
-          @data['arguments'] = [] # don't use '--' as first argument
-          @data['command'] = @script[1] #remove 'runx' from commands
-          @script.shift
-          @data['id'] = @script.join('-').tr('@/\*?% []#$', '_')
-          @data['id'][0] = ''
-          @script.shift
-        # else join /sbin/my_init with your commands
-        else
-          @data['arguments'] = ['--']
-          @data['id'] = @script.join('-').tr('@/\*?% []#$', '_')
-          @data['id'][0] = ''
-        end
-        @script.each { |i| @data['arguments'].push i }
-      end
     end
 
-    def is_paused
-      begin
-        resp = RestClient.get "#{@uri}/api/requests/request/#{@data['id']}"
-        JSON.parse(resp)['state'] == 'PAUSED'
-      rescue
-        print ' Deploying request...'.light_green
-        false
-      end
-    end
-
-    def runner
-      if is_paused()
-        puts ' PAUSED, SKIPPING.'.yellow
-        return
-      else
-        # create or update the request
-        RestClient.post "#{@uri}/api/requests", @data.to_json, :content_type => :json
-      end
-
-      # deploy the request
-      @data['requestId'] = @data['id']
-      @data['id'] = "#{@release}.#{Time.now.to_i}"
-      @deploy = {
-       'deploy' => @data,
-       'user' => `whoami`.chomp,
-       'unpauseOnSuccessfulDeploy' => false
-      }
-      RestClient.post "#{@uri}/api/deploys", @deploy.to_json, :content_type => :json
-      puts ' Deploy succeeded.'.green
-
-      # get active tasks until ours shows up so we can get IP/PORT
+    def waitForTaskToShowUp
+      # repeatedly poll API for active tasks until ours shows up so we can get IP/PORT for SSH
       begin
         @thisTask = ''
-        @tasks = JSON.parse(RestClient.get "#{@uri}/api/tasks/active", :content_type => :json)
+        @tasks = JSON.parse(RestClient.get "#{$uri}/api/tasks/active", :content_type => :json)
         @tasks.each do |entry|
           if entry['taskRequest']['request']['id'] == @data['requestId']
             @thisTask = entry
@@ -108,52 +64,66 @@ module Singularity
       end until @thisTask != ''
       @ip = @thisTask['offer']['url']['address']['ip']
       @port = @thisTask['mesosTask']['container']['docker']['portMappings'][0]['hostPort']
+    end
+
+    def createRequest
+      RestClient.post "#{$uri}/api/requests", @data.to_json, :content_type => :json
+    end
+
+    def deployRequest
+
+    end
+
+    def deleteRequest
+      RestClient.delete "#{$uri}/api/requests/request/#{@data['requestId']}"
+    end
+
+    def printOutput(source, offset, color)
+      @output = JSON.parse(RestClient.get "#{$uri}/api/sandbox/#{@thisTask['taskId']['id']}/read",
+        {params: {path: source, length: 30000, offset: offset}})['data']
+      outLength = @output.bytes.to_a.size
+      if @output.length > 0
+        color == 'light_cyan' ? print @output.light_cyan : print @output.light_magenta
+        offset += outLength
+      end
+    end
+
+    def run
+      if $request.is_paused(@data['id'])
+        puts ' PAUSED, SKIPPING.'.yellow
+        return
+      end
+
+      createRequest()
+      deployRequest()
+      waitForTaskToShowUp()
 
       # SSH into the machine
-      if @script == 'ssh'
-        # uses 'begin end until' because 'system' will keep returning 'false' unless the command exits with success
-        # this makes sure that the docker image has completely started and the SSH command succeeds
-        where = Dir.pwd.split('/').last
-        puts " Opening a shell to #{where}, please wait a moment...".light_blue
+      if @commands == 'ssh'
+        puts " Opening a shell to #{@directoryName}, please wait a moment...".light_blue
+        # 'begin end until' makes sure that the image has completely started so the SSH command succeeds
         begin end until system "ssh -o LogLevel=quiet -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@#{@ip} -p #{@port}"
       else
         puts " Deployed and running #{@data['command']} #{@data['arguments']}".light_green
-        print ' STDOUT'.light_cyan
-        print ' and'
-        print ' STDERR'.light_magenta
-        puts ':'
+        print ' STDOUT'.light_cyan + ' and' + ' STDERR'.light_magenta + ":\n"
 
-        # output STDOUT / STDERR to shell
+        # offset (place saving) variables
         @stdoutOffset = 0
         @stderrOffset = 0
         begin
-          # get most recent task state
-          # need to wait for "task_running" before we can ask for STDOUT/STDERR
-          @taskState = JSON.parse(RestClient.get "#{@uri}/api/history/task/#{@thisTask['taskId']['id']}")
+          # gets most recent task state & wait for "TASK_RUNNING" before we can ask for STDOUT/STDERR
+          @taskState = JSON.parse(RestClient.get "#{$uri}/api/history/task/#{@thisTask['taskId']['id']}")
           @taskState['taskUpdates'].each do |update|
             @taskState = update['taskState']
           end
           if @taskState == 'TASK_RUNNING'
-            # print stdout
-            @stdout = JSON.parse(RestClient.get "#{@uri}/api/sandbox/#{@thisTask['taskId']['id']}/read", {params: {path: 'stdout', length: 30000, offset: @stdoutOffset}})['data']
-            outLength = @stdout.bytes.to_a.size
-            if @stdout.length > 0
-              print @stdout.light_cyan
-              @stdoutOffset += outLength
-            end
-            # print stderr
-            @stderr = JSON.parse(RestClient.get "#{@uri}/api/sandbox/#{@thisTask['taskId']['id']}/read", {params: {path: 'stderr', length: 30000, offset: @stderrOffset}})['data']
-            errLength = @stderr.bytes.to_a.size
-            if @stderr.length > 0
-              print @stderr.light_magenta
-              @stderrOffset += errLength
-            end
+            printOutput('stdout', @stdoutOffset, 'light_cyan')
+            printOutput('stderr', @stderrOffset, 'light_magenta')
           end
         end until @taskState == 'TASK_FINISHED'
       end
 
-      # finally, delete the request (which also deletes the corresponding task)
-      RestClient.delete "#{@uri}/api/requests/request/#{@data['requestId']}"
+      deleteRequest()
 
     rescue Exception => e
       puts " #{e.response}".red

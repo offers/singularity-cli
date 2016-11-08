@@ -39,11 +39,8 @@ module Singularity
       end
 
       it 'should deploy the request' do
-        expect(WebMock).to have_requested(:post, $uri+'/api/deploys')
-      end
-
-      it 'should check that correct requestId was deployed' do
-        expect(@resp[:deploy][:requestId]).to eq($id)
+        expect(WebMock).to have_requested(:post, $uri+'/api/deploys').
+          with(body: hash_including({'user' => `whoami`.chomp}))
       end
 
     end
