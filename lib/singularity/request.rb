@@ -1,42 +1,46 @@
 module Singularity
   class Request
-    attr_accessor :release, :cpus, :mem, :envs, :schedule, :cmd, :arguments, :request_id, :repo, :release_string, :release_id_string
+    attr_accessor :release, :cpus, :mem, :envs, :schedule, :cmd, :arguments, :request_id, :repo, :release_string, :release_id_string, :uri, :data
 
-    def initialize(data, file, uri)
+    def initialize(data, uri)
       @data = data
-      @file = file
       @uri = uri
-
+      @release = JSON.parse(ERB.new(open(File.join(Dir.pwd, '.mescal.json')).read)).split(':')[1]
     end
 
+    # creates or updates a request in singularity
+    def create
+      RestClient.post "#{@uri}/api/requests", @data.to_json, :content_type => :json
+    end
+
+    # deploys a request in singularity
     def deploy
       if is_paused
         puts ' PAUSED, SKIPPING.'
         return
       else
         @data['requestId'] = @data['id']
-        @data['id'] = "#{@mescaljson['image'].split(':')[1]}.#{Time.now.to_i}"
+        @data['id'] = "#{@release}.#{Time.now.to_i}"
         @deploy = {
          'deploy' => @data,
          'user' => `whoami`.chomp,
          'unpauseOnSuccessfulDeploy' => false
         }
         # deploy the request
-        RestClient.post "#{$uri}/api/deploys", @deploy.to_json, :content_type => :json
+        RestClient.post "#{@uri}/api/deploys", @deploy.to_json, :content_type => :json
         puts ' Deploy succeeded.'.green
       end
     end
 
+    # deletes a request in singularity
     def delete
-
+      RestClient.delete "#{@uri}/api/requests/request/#{@data['requestId']}"
     end
 
+    # checks to see if a request is paused
     def is_paused
-      return JSON.parse(RestClient.get "#{$uri}/api/requests/request/#{data_id}")['state'] == 'PAUSED'
+      return JSON.parse(RestClient.get "#{@uri}/api/requests/request/#{@data['id']}")['state'] == 'PAUSED'
     end
 
-    def get_binding
-      binding()
-    end
   end
 end

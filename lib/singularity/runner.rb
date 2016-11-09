@@ -1,13 +1,22 @@
 module Singularity
   class Runner
-    def initialize(commands)
+    def initialize(commands, uri)
       @commands = commands
-      # establish 'id', 'command', and 'args' for filling in the @data hash below
+      @uri = uri
+
+      @directoryName = Dir.pwd.split('/').last
+
+      mescaljson = JSON.parse(ERB.new(open(File.join(Dir.pwd, '.mescal.json')).read))
+      @cpus = mescaljson['cpus']
+      @mem = mescaljson['mem']
+      @image = mescaljson['image']
+
+      # establish 'id', 'command', and 'args' for filling in the data hash below
       commandId = @commands.join('-').tr('@/\*?% []#$', '_')
       args = ''
       case @commands[0]
         when 'ssh'
-          # the command becomes running the ssh bootstrap script
+          # the 'command' becomes 'run the ssh bootstrap script'
           commandId = @directoryName + '_SSH'
           command = "#{@mescaljson['sshCmd']}"
         when 'runx'
@@ -22,13 +31,13 @@ module Singularity
       end
 
       # create request/deploy json data
-      @data = {
+      data = {
         'id' => "#{commandId}",
         'command' => "#{command}",
         'arguments' => "#{args}",
         'resources' => {
-          'memoryMb' => @mescaljson['mem'],
-          'cpus' => @mescaljson['cpus'],
+          'memoryMb' => @mem,
+          'cpus' => @cpus,
           'numPorts' => 1
         },
         'env' => {
@@ -38,7 +47,7 @@ module Singularity
         'containerInfo' => {
           'type' => 'DOCKER',
           'docker' => {
-            'image' => @mescaljson['image'],
+            'image' => @image,
             'network' => 'BRIDGE',
             'portMappings' => [{
               'containerPortType' => 'LITERAL',
@@ -49,15 +58,16 @@ module Singularity
           }
         }
       }
+      @request = Request.new(data, @uri)
     end
 
     def waitForTaskToShowUp
       # repeatedly poll API for active tasks until ours shows up so we can get IP/PORT for SSH
       begin
         @thisTask = ''
-        @tasks = JSON.parse(RestClient.get "#{$uri}/api/tasks/active", :content_type => :json)
+        @tasks = JSON.parse(RestClient.get "#{@uri}/api/tasks/active", :content_type => :json)
         @tasks.each do |entry|
-          if entry['taskRequest']['request']['id'] == @data['requestId']
+          if entry['taskRequest']['request']['id'] == @request.data['requestId']
             @thisTask = entry
           end
         end
@@ -66,20 +76,8 @@ module Singularity
       @port = @thisTask['mesosTask']['container']['docker']['portMappings'][0]['hostPort']
     end
 
-    def createRequest
-      RestClient.post "#{$uri}/api/requests", @data.to_json, :content_type => :json
-    end
-
-    def deployRequest
-
-    end
-
-    def deleteRequest
-      RestClient.delete "#{$uri}/api/requests/request/#{@data['requestId']}"
-    end
-
     def printOutput(source, offset, color)
-      @output = JSON.parse(RestClient.get "#{$uri}/api/sandbox/#{@thisTask['taskId']['id']}/read",
+      @output = JSON.parse(RestClient.get "#{@uri}/api/sandbox/#{@thisTask['taskId']['id']}/read",
         {params: {path: source, length: 30000, offset: offset}})['data']
       outLength = @output.bytes.to_a.size
       if @output.length > 0
@@ -89,13 +87,13 @@ module Singularity
     end
 
     def run
-      if $request.is_paused(@data['id'])
+      if $request.is_paused(@request.data['id'])
         puts ' PAUSED, SKIPPING.'.yellow
         return
       end
 
-      createRequest()
-      deployRequest()
+      @request.create()
+      @request.deploy()
       waitForTaskToShowUp()
 
       # SSH into the machine
@@ -104,7 +102,7 @@ module Singularity
         # 'begin end until' makes sure that the image has completely started so the SSH command succeeds
         begin end until system "ssh -o LogLevel=quiet -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@#{@ip} -p #{@port}"
       else
-        puts " Deployed and running #{@data['command']} #{@data['arguments']}".light_green
+        puts " Deployed and running #{@request.data['command']} #{@request.data['arguments']}".light_green
         print ' STDOUT'.light_cyan + ' and' + ' STDERR'.light_magenta + ":\n"
 
         # offset (place saving) variables
@@ -112,7 +110,7 @@ module Singularity
         @stderrOffset = 0
         begin
           # gets most recent task state & wait for "TASK_RUNNING" before we can ask for STDOUT/STDERR
-          @taskState = JSON.parse(RestClient.get "#{$uri}/api/history/task/#{@thisTask['taskId']['id']}")
+          @taskState = JSON.parse(RestClient.get "#{@uri}/api/history/task/#{@thisTask['taskId']['id']}")
           @taskState['taskUpdates'].each do |update|
             @taskState = update['taskState']
           end
@@ -123,7 +121,7 @@ module Singularity
         end until @taskState == 'TASK_FINISHED'
       end
 
-      deleteRequest()
+      @request.delete()
 
     rescue Exception => e
       puts " #{e.response}".red
