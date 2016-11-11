@@ -8,7 +8,7 @@ Gem::Specification.new do |s|
     s.files       = %w[
                      LICENSE
                      README.md
-                    ] + Dir['lib/*.rb']
+                    ] + Dir['lib/*.rb'] + Dir['lib/singularity/*.rb']
     s.homepage    = 'https://github.com/offers/singularity-cli'
     s.executables = %w[singularity]
     s.add_runtime_dependency 'rest-client', '~> 1.8', '>= 1.8.0'

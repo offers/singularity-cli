@@ -1,19 +1,18 @@
 #!/usr/bin/env ruby
 require 'singularity'
-require 'json'
 
 def print_usage
     puts <<END
 # Usage:
-#    singularity deploy <uri> <file.json> <release>
+#    singularity deploy <file.json> <release>
 #       - deploy singularity job
-#    singularity delete <uri> <file.json>
-#       - delete singularity deploy
+#    singularity delete <file.json>
+#       - delete singularity job
 #    singularity run <commands>
-#       - start new box in singularity and run <commands>
-#         (do this from the base project folder of the box you wish to start)
+#       - start new instance in singularity and run <commands>
 #    singularity runx <commands>
-#       - same as "singularity run" without use of /sbin/my_init
+#       - use this if "singularity run" fails
+#       - same as "singularity run", but skips /sbin/my_init
 #    singularity ssh
 #       - start new box in singularity and SSH into it
 END
@@ -25,27 +24,29 @@ File.file?('mesos-deploy.yml') and File.file?('.mescal.json') or puts 'Please do
 
 action = ARGV[0]
 file = ARGV[1]
+release = ARGV[2]
 @uri = YAML.load_file(File.join(Dir.pwd, 'mesos-deploy.yml'))['singularity_url']
 
 case action
   when "delete"
+    print_usage unless ARGV.size == 2
     Singularity::Request.new(JSON.parse(ERB.new(open(file).read)), @uri).delete
 
   when "deploy"
-    Singularity::Request.new(JSON.parse(ERB.new(open(file).read)), @uri).deploy
+    # Singularity::Request.new(JSON.parse(ERB.new(open(file).read)), @uri).deploy
 
   when "run"
     # remove the word "run" from ARGV, pass the remainder to Runner
-    ARGV.shift
-    Singularity::Runner.new(ARGV, @uri).run
+    # ARGV.shift
+    # Singularity::Runner.new(ARGV, @uri).run
 
   when "runx"
     # this option is to skip the use of /sbin/my_init
     # (some commands won't run correctly when both are used)
-    Singularity::Runner.new(ARGV, @uri).run
+    # Singularity::Runner.new(ARGV, @uri).run
 
   when "ssh"
-    Singularity::Runner.new("ssh").run
+    # Singularity::Runner.new("ssh").run
 
   else
     print_usage

@@ -81,7 +81,7 @@ module Singularity
         {params: {path: source, length: 30000, offset: offset}})['data']
       outLength = @output.bytes.to_a.size
       if @output.length > 0
-        color == 'light_cyan' ? print @output.light_cyan : print @output.light_magenta
+        print @output.send(color)
         offset += outLength
       end
     end
