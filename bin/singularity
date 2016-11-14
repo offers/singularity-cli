@@ -18,35 +18,33 @@ def print_usage
 END
 end
 
-print_usage if ARGV.empty?
-
 File.file?('mesos-deploy.yml') and File.file?('.mescal.json') or puts 'Please do this command from a project directory (where both mesos-deploy.yml and .mescal.json exist).'
 
 action = ARGV[0]
-file = ARGV[1]
-release = ARGV[2]
-@uri = YAML.load_file(File.join(Dir.pwd, 'mesos-deploy.yml'))['singularity_url']
+uri = YAML.load_file(File.join(Dir.pwd, 'mesos-deploy.yml'))['singularity_url']
 
 case action
   when "delete"
     print_usage unless ARGV.size == 2
-    Singularity::Request.new(JSON.parse(ERB.new(open(file).read)), @uri).delete
+    data = JSON.parse(File.read(ARGV[1]))
+    request = Singularity::Request.new(data, uri)
+    request.delete
 
   when "deploy"
-    # Singularity::Request.new(JSON.parse(ERB.new(open(file).read)), @uri).deploy
+    print_usage unless ARGV.size == 3
+    data = JSON.parse(File.read(ARGV[1]))
+    release = ARGV[2]
+    request = Singularity::Request.new(data, uri, release)
+    request.create
+    request.deploy
 
   when "run"
-    # remove the word "run" from ARGV, pass the remainder to Runner
-    # ARGV.shift
-    # Singularity::Runner.new(ARGV, @uri).run
+    ARGV.shift
+    Singularity::Runner.new(ARGV, uri).run
 
-  when "runx"
-    # this option is to skip the use of /sbin/my_init
-    # (some commands won't run correctly when both are used)
-    # Singularity::Runner.new(ARGV, @uri).run
-
-  when "ssh"
-    # Singularity::Runner.new("ssh").run
+  when "runx" || "ssh"
+    # this option is to skip the use of /sbin/my_init: some commands won't run correctly when both are used
+    Singularity::Runner.new(ARGV, uri).run
 
   else
     print_usage

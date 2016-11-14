@@ -6,7 +6,6 @@ module Singularity
       @data = data
       @uri = uri
       @release = release
-      # @release = JSON.parse(ERB.new(open(File.join(Dir.pwd, '.mescal.json')).read)).split(':')[1]
     end
 
     # checks to see if a request is paused
@@ -21,7 +20,8 @@ module Singularity
 
     # deletes a request in singularity
     def delete
-      RestClient.delete "#{@uri}/api/requests/request/#{@data['requestId']}"
+      RestClient.delete "#{@uri}/api/requests/request/#{@data['requestId']||@data['id']}"
+      puts ' Deleted request: '.red + "#{@data['requestId']||@data['id']}".light_blue
     end
 
     # deploys a request in singularity
@@ -39,7 +39,7 @@ module Singularity
         }
         # deploy the request
         RestClient.post "#{@uri}/api/deploys", @deploy.to_json, :content_type => :json
-        puts ' Deploy succeeded.'.green
+        puts ' Deploy succeeded: '.green + @data['requestId'].light_blue
       end
     end
 
