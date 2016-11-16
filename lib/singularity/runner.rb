@@ -71,6 +71,12 @@ module Singularity
         @thisTask = ''
         @tasks = JSON.parse(RestClient.get "#{@uri}/api/tasks/active", :content_type => :json)
         @tasks.each do |entry|
+          puts "hi".red
+          puts "hi".red
+          puts "@request.data['requestId']: " + @request.data['requestId']
+          puts "entry['taskRequest']['request']['id']: "+entry['taskRequest']['request']['id']
+          puts "hi".red
+          puts "hi".red
           if entry['taskRequest']['request']['id'] == @request.data['requestId']
             @thisTask = entry
           end

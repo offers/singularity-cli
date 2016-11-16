@@ -27,7 +27,7 @@ case action
   when "delete"
     print_usage unless ARGV.size == 2
     data = JSON.parse(File.read(ARGV[1]))
-    request = Singularity::Request.new(data, uri)
+    request = Singularity::Request.new(data, uri, nil)
     request.delete
 
   when "deploy"

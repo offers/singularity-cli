@@ -2,7 +2,7 @@ module Singularity
   class Request
     attr_accessor :release, :cpus, :mem, :envs, :schedule, :cmd, :arguments, :request_id, :repo, :release_string, :release_id_string, :uri, :data
 
-    def initialize(data, uri, release='r00')
+    def initialize(data, uri, release)
       @data = data
       @uri = uri
       @release = release

@@ -6,13 +6,13 @@ require 'singularity'
 
 RSpec.configure do |config|
   config.before(:all) do
-    $uri = 'www.example.com'
-    $file = 'TestRequest.json'
-    $id = 'testId'
-    $release = 'r99'
+    @uri = 'www.example.com'
+    @file = 'TestRequest.json'
+    @id = 'testId'
+    @release = 'r99'
   end
   config.before(:each) do
-    $data = {'id' => $id}
+    @data = {'id' => @id}
   end
 
   config.expect_with :rspec do |expectations|
