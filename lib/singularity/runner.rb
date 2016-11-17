@@ -1,9 +1,13 @@
 module Singularity
   class Runner
+    attr_accessor :request, :ip, :port
+
     def initialize(commands, uri)
       @commands = commands
       @uri = uri
       @projectName = Dir.pwd.split('/').last
+      @ip = 0
+      @port = 0
 
       mescaljson = JSON.parse(File.read('.mescal.json'))
       @cpus = mescaljson['cpus']
@@ -71,12 +75,7 @@ module Singularity
         @thisTask = ''
         @tasks = JSON.parse(RestClient.get "#{@uri}/api/tasks/active", :content_type => :json)
         @tasks.each do |entry|
-          puts "hi".red
-          puts "hi".red
-          puts "@request.data['requestId']: " + @request.data['requestId']
-          puts "entry['taskRequest']['request']['id']: "+entry['taskRequest']['request']['id']
-          puts "hi".red
-          puts "hi".red
+          entry = JSON.parse(entry)
           if entry['taskRequest']['request']['id'] == @request.data['requestId']
             @thisTask = entry
           end
@@ -93,7 +92,6 @@ module Singularity
       # SSH into the machine
       if @commands[0] == 'ssh'
         puts " Opening a shell to #{@projectName}, please wait a moment...".light_blue
-        # 'begin end until' makes sure that the image has completely started so the SSH command succeeds
         begin end until system "ssh -o LogLevel=quiet -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@#{@ip} -p #{@port}"
       else
         puts " Deployed and running #{@request.data['command']} #{@request.data['arguments']}".light_green

@@ -9,7 +9,7 @@ RSpec.configure do |config|
     @uri = 'www.example.com'
     @file = 'TestRequest.json'
     @id = 'testId'
-    @release = 'r99'
+    @release = 'r01'
   end
   config.before(:each) do
     @data = {'id' => @id}
