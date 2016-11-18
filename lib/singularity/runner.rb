@@ -8,6 +8,7 @@ module Singularity
       @projectName = Dir.pwd.split('/').last
       @ip = 0
       @port = 0
+      @thisTask = ''
 
       mescaljson = JSON.parse(File.read('.mescal.json'))
       @cpus = mescaljson['cpus']
@@ -24,8 +25,9 @@ module Singularity
           # if 'runx' is passed, skip use of /sbin/my_init
           commandId = @commands.join('_').tr('@/\*?% []#$', '_')
           @commands.shift
-          command = @commands[0]
+          command = @commands.shift
           @args = []
+          @setargs = true
           @commands.each { |i| @args.push i }
         else
           # else join /sbin/my_init with your commands
@@ -72,7 +74,6 @@ module Singularity
     def waitForTaskToShowUp
       # repeatedly poll API for active tasks until ours shows up so we can get IP/PORT for SSH
       begin
-        @thisTask = ''
         @tasks = JSON.parse(RestClient.get "#{@uri}/api/tasks/active", :content_type => :json)
         @tasks.each do |entry|
           entry = JSON.parse(entry)

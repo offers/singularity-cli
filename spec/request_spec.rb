@@ -8,8 +8,7 @@ module Singularity
 
     describe '#is_paused' do
       before {
-        WebMock.stub_request(:get, /.*/).
-          to_return(:body => '{"state":"PAUSED"}')
+        stub_is_paused(@request, "PAUSED")
         @request.is_paused
       }
       it "should check if the request is paused" do
@@ -41,8 +40,7 @@ module Singularity
 
     context 'when paused' do
       before {
-        WebMock.stub_request(:get, /.*/).
-          to_return(:body => '{"state":"PAUSED"}')
+        stub_is_paused(@request, "PAUSED")
         WebMock.stub_request(:post, /.*/)
         @response = @request.is_paused
         @request.deploy
@@ -64,8 +62,7 @@ module Singularity
 
     context 'when not paused' do
       before {
-        WebMock.stub_request(:get, /.*/).
-          to_return(:body => '{"state":"RUNNING"}')
+        stub_is_paused(@request, "RUNNING")
         WebMock.stub_request(:post, /.*/)
         @response = @request.is_paused
         @request.deploy

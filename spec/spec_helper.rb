@@ -15,13 +15,26 @@ RSpec.configure do |config|
     @data = {'id' => @id}
   end
 
-  config.expect_with :rspec do |expectations|
-    expectations.include_chain_clauses_in_custom_matcher_descriptions = true
+  def stub_get_tasks(runner)
+    WebMock.stub_request(:get, @uri+"/api/tasks/active").
+      to_return(:body => ["{\"taskId\": {\"id\": \"#{runner.request.data['id']}\"},\"taskRequest\": {\"request\": {\"id\":\"#{runner.request.data['id']}\"}},\"offer\":{\"url\":{\"address\":{\"ip\":\"127.0.0.1\"}}},\"mesosTask\":{\"container\":{\"docker\":{\"portMappings\":[{\"hostPort\":\"80\"}]}}}}"].to_json, :headers => {"Content-Type"=> "application/json"})
   end
 
-  config.mock_with :rspec do |mocks|
-    mocks.verify_partial_doubles = true
+  def stub_get_task_state(runner)
+    WebMock.stub_request(:get, @uri+"/api/history/task/"+runner.request.data['id']).to_return(
+      {:body => {"taskUpdates":[{"taskState": "TASK_RUNNING"}]}.to_json},
+      {:body => {"taskUpdates":[{"taskState": "TASK_FINISHED"}]}.to_json})
   end
 
-  config.shared_context_metadata_behavior = :apply_to_host_groups
+  def stub_STDOUT_output(runner)
+    WebMock.stub_request(:get, /.*sandbox.*stdout/).to_return({:body => {"data": "test stdout output\n"}.to_json, :headers => {"Content-Type"=> "application/json"}},{:body => {"data": ""}.to_json, :headers => {"Content-Type"=> "application/json"}})
+  end
+
+  def stub_STDERR_output(runner)
+    WebMock.stub_request(:get, /.*sandbox.*stderr/).to_return({:body => {"data": "test stderr output\n"}.to_json, :headers => {"Content-Type"=> "application/json"}},{:body => {"data": ""}.to_json, :headers => {"Content-Type"=> "application/json"}})
+  end
+
+  def stub_is_paused(request, state)
+    WebMock.stub_request(:get, @uri+"/api/requests/request/"+request.data['id']).to_return(:body => "{\"state\":\"#{state}\"}")
+  end
 end
