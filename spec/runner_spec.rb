@@ -1,5 +1,13 @@
 require 'spec_helper'
 
+# override the Kernel.system call for testing purposes
+module Kernel
+  def system(cmd)
+    puts "The test kernel called: #{cmd}"
+    return true
+  end
+end
+
 module Singularity
   describe Runner do
     before(:each) {
@@ -95,28 +103,31 @@ module Singularity
       end
     end
 
-    # context 'when SSHing into the box' do
-    #   before {
-    #     @commands = ['ssh']
-    #     @runner = Runner.new(@commands, @uri)
-    #     @runner.run
-    #   }
-    #   describe "#run" do
-    #     it "should create the request" do
-    #       expect(WebMock).to have_requested(:post, @uri+"/api/requests")
-    #     end
-    #     it "should deploy the request" do
-    #       expect(WebMock).to have_requested(:post, @uri+"/api/api/deploys")
-    #     end
+    context 'when SSHing into the box' do
+      before {
+        @commands = ['ssh']
+        @runner = Runner.new(@commands, @uri)
+        stub_get_tasks(@runner)
+        stub_is_paused(@runner.request, "RUNNING")
+        @runner.run
+      }
+      describe "#run" do
+        it "should create the request" do
+          expect(WebMock).to have_requested(:post, @uri+"/api/requests")
+        end
+        it "should deploy the request" do
+          expect(WebMock).to have_requested(:post, @uri+"/api/deploys")
+        end
 
-    #     # it "should open a shell to the box" do
+        it "should open a shell to the box" do
+          @runner.request.data['id'] = @runner.request.data['requestId']
+          expect{@runner.run}.to output(/test kernel/).to_stdout
+        end
 
-    #     # end
-
-    #     it "should delete the request after complete" do
-    #       expect(WebMock).to have_requested(:delete, @uri+"/api/requests/request/"+@runner.request.data['id'])
-    #     end
-    #   end
-    # end
+        it "should delete the request after complete" do
+          expect(WebMock).to have_requested(:delete, @uri+"/api/requests/request/"+@runner.request.data['requestId'])
+        end
+      end
+    end
   end
 end
