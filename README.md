@@ -2,6 +2,10 @@
 Authors: 
     @traviswdev
     @chriskite
+
+# Testing:
+./test.sh
+
 # Usage:
 singularity deploy <uri> <file.json> <release>
     - deploy singularity job
