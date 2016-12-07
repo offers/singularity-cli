@@ -2,3 +2,4 @@ app:
   build: .
   volumes:
   - .:/usr/src/app
+  command: bundle exec rspec
