@@ -18,10 +18,13 @@ def print_usage
 END
 end
 
-File.file?('mesos-deploy.yml') and File.file?('.mescal.json') or puts 'Please do this command from a project directory (where both mesos-deploy.yml and .mescal.json exist).'
-
-action = ARGV[0]
-uri = YAML.load_file(File.join(Dir.pwd, 'mesos-deploy.yml'))['singularity_url']
+unless File.file?('mesos-deploy.yml') and File.file?('.mescal.json')
+  puts 'Please do this command from a project directory (where both mesos-deploy.yml and .mescal.json exist).'
+  ARGV[0] = "help"
+else
+  action = ARGV[0]
+  uri = YAML.load_file(File.join(Dir.pwd, 'mesos-deploy.yml'))['singularity_url']
+end
 
 case action
   when "delete"
