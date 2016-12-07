@@ -76,7 +76,7 @@ module Singularity
       begin
         @tasks = JSON.parse(RestClient.get "#{@uri}/api/tasks/active", :content_type => :json)
         @tasks.each do |entry|
-          entry = JSON.parse(entry)
+          entry = JSON.parse(entry.to_json)
           if entry['taskRequest']['request']['id'] == @request.data['requestId']
             @thisTask = entry
           end
@@ -109,6 +109,7 @@ module Singularity
             @taskState = update['taskState']
           end
           if @taskState == "TASK_RUNNING"
+            sleep 1
             # print stdout
             @stdout = JSON.parse(RestClient.get "#{@uri}/api/sandbox/#{@thisTask['taskId']['id']}/read", {params: {path: "stdout", length: 30000, offset: @stdoutOffset}})['data']
             outLength = @stdout.bytes.to_a.size
