@@ -19,11 +19,11 @@ module Singularity
       case @commands[0]
         when 'ssh'
           # the 'command' becomes 'run the ssh bootstrap script'
-          commandId = @projectName + '_SSH'
+          commandId = @projectName + '-SSH-' + `whoami`.chomp + '-' + Time.now.to_i.to_s
           command = "#{mescaljson['sshCmd']}"
         when 'runx'
           # if 'runx' is passed, skip use of /sbin/my_init
-          commandId = @commands.join('_').tr('@/\*?% []#$', '_')
+          commandId = @commands.join('-').tr('@/\*?% []#$', '-')
           @commands.shift
           command = @commands.shift
           @args = []
@@ -31,7 +31,7 @@ module Singularity
           @commands.each { |i| @args.push i }
         else
           # else join /sbin/my_init with your commands
-          commandId = @commands.join('_').tr('@/\*?% []#$', '_')
+          commandId = @commands.join('-').tr('@/\*?% []#$', '-')
           command = '/sbin/my_init'
           @args = ['--']
           @setargs = true
@@ -75,8 +75,8 @@ module Singularity
       # repeatedly poll API for active tasks until ours shows up so we can get IP/PORT for SSH
       begin
         @tasks = JSON.parse(RestClient.get "#{@uri}/api/tasks/active", :content_type => :json)
+
         @tasks.each do |entry|
-          entry = JSON.parse(entry.to_json)
           if entry['taskRequest']['request']['id'] == @request.data['requestId']
             @thisTask = entry
           end
@@ -92,7 +92,7 @@ module Singularity
       waitForTaskToShowUp()
       # SSH into the machine
       if @commands[0] == 'ssh'
-        puts " Opening a shell to #{@projectName}, please wait a moment...".light_blue
+        puts " Opening a shell to ".light_blue+@projectName.yellow+" (root@#{@ip}:#{@port}), please wait a moment...".light_blue
         begin end until system "ssh -o LogLevel=quiet -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@#{@ip} -p #{@port}"
       else
         puts " Deployed and running #{@request.data['command']} #{@request.data['arguments']}".light_green
@@ -107,6 +107,10 @@ module Singularity
           @taskState = JSON.parse(RestClient.get "#{@uri}/api/history/task/#{@thisTask['taskId']['id']}")
           @taskState["taskUpdates"].each do |update|
             @taskState = update['taskState']
+          end
+          if @taskState == "TASK_FAILED"
+            @request.delete
+            exit 1
           end
           if @taskState == "TASK_RUNNING"
             sleep 1
@@ -130,6 +134,9 @@ module Singularity
 
       @request.delete
 
+    rescue SystemExit, Interrupt
+      #deletes request if you ctrl-c
+      @request.delete
     rescue Exception => e
       puts " #{e.response}".red
     end

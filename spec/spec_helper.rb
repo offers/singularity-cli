@@ -1,4 +1,5 @@
 require 'webmock/rspec'
+require 'colorize'
 WebMock.disable_net_connect!(allow_localhost: true)
 
 $:.unshift(File.dirname(__FILE__) + '/../lib/')
@@ -16,8 +17,11 @@ RSpec.configure do |config|
   end
 
   def stub_get_tasks(runner)
+    @returnhash = [{taskId: {id: "#{runner.request.data['id']}"}, taskRequest: {request: {id: "#{runner.request.data['id']}"} }, offer: {url: {address: {ip: "127.0.0.1"} } }, mesosTask: {container: {docker: {portMappings: [{hostPort: 80 }] } } } }]
+    # puts "returnhash: \n\t" + @returnhash
+
     WebMock.stub_request(:get, @uri+"/api/tasks/active").
-      to_return(:body => ["{\"taskId\": {\"id\": \"#{runner.request.data['id']}\"},\"taskRequest\": {\"request\": {\"id\":\"#{runner.request.data['id']}\"}},\"offer\":{\"url\":{\"address\":{\"ip\":\"127.0.0.1\"}}},\"mesosTask\":{\"container\":{\"docker\":{\"portMappings\":[{\"hostPort\":\"80\"}]}}}}"].to_json, :headers => {"Content-Type"=> "application/json"})
+      to_return(:body => @returnhash.to_json, :headers => {"Content-Type"=> "application/json"})
   end
 
   def stub_get_task_state(runner)
@@ -35,6 +39,6 @@ RSpec.configure do |config|
   end
 
   def stub_is_paused(request, state)
-    WebMock.stub_request(:get, @uri+"/api/requests/request/"+request.data['id']).to_return(:body => "{\"state\":\"#{state}\"}")
+    WebMock.stub_request(:get, @uri+"/api/requests/request/"+request.data['id']).to_return(:body => {state: state}.to_json, :headers => {"Content-Type"=> "application/json"})
   end
 end

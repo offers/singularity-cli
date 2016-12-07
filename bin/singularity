@@ -18,13 +18,11 @@ def print_usage
 END
 end
 
-unless File.file?('mesos-deploy.yml') and File.file?('.mescal.json')
-  puts 'Please do this command from a project directory (where both mesos-deploy.yml and .mescal.json exist).'
-  ARGV[0] = "help"
-else
-  action = ARGV[0]
-  uri = YAML.load_file(File.join(Dir.pwd, 'mesos-deploy.yml'))['singularity_url']
-end
+action = ARGV[0]
+
+File.file?('mesos-deploy.yml') and File.file?('.mescal.json') or puts 'Please do this command from a project directory (where both mesos-deploy.yml and .mescal.json exist).'
+
+uri = YAML.load_file(File.join(Dir.pwd, 'mesos-deploy.yml'))['singularity_url']
 
 case action
   when "delete"
@@ -45,8 +43,11 @@ case action
     ARGV.shift
     Singularity::Runner.new(ARGV, uri).run
 
-  when "runx" || "ssh"
+  when "runx"
     # this option is to skip the use of /sbin/my_init: some commands won't run correctly when both are used
+    Singularity::Runner.new(ARGV, uri).run
+
+  when "ssh"
     Singularity::Runner.new(ARGV, uri).run
 
   else

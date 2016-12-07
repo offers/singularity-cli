@@ -33,7 +33,7 @@ module Singularity
       end
 
       it "should have the correct port" do
-        expect(@runner.port).to eq('80')
+        expect(@runner.port).to eq(80)
       end
     end
 
