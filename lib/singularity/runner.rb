@@ -1,3 +1,5 @@
+require 'open3'
+
 module Singularity
   class Runner
     attr_accessor :request, :ip, :port
@@ -93,7 +95,19 @@ module Singularity
       # SSH into the machine
       if @commands[0] == 'ssh'
         puts " Opening a shell to ".light_blue+@projectName.yellow+" (root@#{@ip}:#{@port}), please wait a moment...".light_blue
-        begin end until system "ssh -o LogLevel=quiet -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@#{@ip} -p #{@port}"
+        cmd = "ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@#{@ip} -p #{@port}"
+
+        loop do
+          stdout, stderr, status = Open3.capture3(cmd)
+          break if 0 == status # ssh was successful
+
+          # keep waiting for ssh to come online, but exit on other errors
+          unless stderr.include?("Connection refused")
+            puts stderr.red 
+            break 
+          end
+          sleep 1
+        end
       else
         puts " Deployed and running #{@request.data['command']} #{@request.data['arguments']}".light_green
         print ' STDOUT'.light_cyan + ' and' + ' STDERR'.light_magenta + ":\n"

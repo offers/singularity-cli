@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
-require 'singularity'
+require 'fileutils'
+require_relative '../lib/singularity'
 
 def print_usage
     puts <<END
@@ -48,6 +49,11 @@ case action
     Singularity::Runner.new(ARGV, uri).run
 
   when "ssh"
+    # copy the docker mounted ssh files and chown them to work inside the container
+    if Dir.exists?('/ssh')
+      FileUtils.copy_entry '/ssh', '/root/.ssh'
+      FileUtils.chown_R 'root', 'root', '/root/.ssh'
+    end
     Singularity::Runner.new(ARGV, uri).run
 
   else
