@@ -22,7 +22,8 @@ module Singularity
       case @commands[0]
         when 'ssh'
           # the 'command' becomes 'run the ssh bootstrap script'
-          commandId = @projectName + '-SSH-' + `whoami`.chomp + '-' + Time.now.to_i.to_s
+          user = (ENV['SINGULARITY_USER'] || `whoami`).chomp
+          commandId = @projectName + '-SSH-' + user + '-' + Time.now.to_i.to_s
           command = "#{mescaljson['sshCmd']}"
         when 'runx'
           # if 'runx' is passed, skip use of /sbin/my_init

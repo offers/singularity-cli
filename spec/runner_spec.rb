@@ -37,7 +37,7 @@ module Singularity
       end
     end
 
-    context 'when executing commands on the box' do
+    context 'when executing commands on the container' do
       before {
         @commands = ['ls', '-a']
         @runner = Runner.new(@commands, @uri)
@@ -74,7 +74,7 @@ module Singularity
       end
     end
 
-    context 'when executing commands on the box' do
+    context 'when executing commands on the container' do
       before {
         @commands = ['runx', 'ls', '-a']
         @runner = Runner.new(@commands, @uri)
@@ -89,6 +89,12 @@ module Singularity
         it "should create the request" do
           expect(WebMock).to have_requested(:post, @uri+"/api/requests")
         end
+
+        context "when creating the request" do
+          it "should put the SINGULARITY_USER or shell user name in the id"
+          it "should put a millisecond timestamp in the id"
+        end
+
         it "should deploy the request" do
           expect(WebMock).to have_requested(:post, @uri+"/api/deploys")
         end
@@ -107,7 +113,7 @@ module Singularity
       end
     end
 
-    context 'when SSHing into the box' do
+    context 'when SSHing into the container' do
       before {
         @commands = ['ssh']
         @runner = Runner.new(@commands, @uri)
@@ -124,7 +130,7 @@ module Singularity
           expect(WebMock).to have_requested(:post, @uri+"/api/deploys")
         end
 
-        it "should open a shell to the box" do
+        it "should open a shell to the container" do
           @runner.request.data['id'] = @runner.request.data['requestId']
           expect{@runner.run}.to output(/test kernel/).to_stdout
         end
