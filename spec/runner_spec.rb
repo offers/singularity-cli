@@ -22,7 +22,7 @@ module Singularity
         @runner = Runner.new(@commands, @uri)
         stub_get_tasks(@runner)
         @runner.request.data['requestId'] = @runner.request.data['id']
-        @runner.waitForTaskToShowUp
+        @runner.send(:waitForTaskToShowUp)
       }
       it "should get the task list" do
         expect(WebMock).to have_requested(:get, @uri+'/api/tasks/active')
@@ -109,6 +109,7 @@ module Singularity
         @runner = Runner.new(@commands, @uri)
         stub_get_tasks(@runner)
         stub_is_paused(@runner.request, "RUNNING")
+        allow(Util).to receive(:port_open?).and_return(true)
         @runner.run
       }
       describe "#run" do

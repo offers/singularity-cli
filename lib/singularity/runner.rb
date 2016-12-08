@@ -1,4 +1,5 @@
-require 'open3'
+require 'socket'
+require 'timeout'
 
 module Singularity
   class Runner
@@ -73,6 +74,27 @@ module Singularity
       @request = Request.new(data, @uri, @image.split(':')[1])
     end
 
+    def run
+      @request.create
+      @request.deploy
+      waitForTaskToShowUp()
+
+      if @commands[0] == 'ssh'
+        runSsh
+      else
+        runCmd
+      end
+
+      @request.delete
+    rescue SystemExit, Interrupt
+      #deletes request if you ctrl-c
+      @request.delete
+    rescue Exception => e
+      puts " #{e.response}".red
+    end
+
+    protected
+
     def waitForTaskToShowUp
       # repeatedly poll API for active tasks until ours shows up so we can get IP/PORT for SSH
       begin
@@ -88,71 +110,55 @@ module Singularity
       @port = @thisTask['mesosTask']['container']['docker']['portMappings'][0]['hostPort']
     end
 
-    def run
-      @request.create
-      @request.deploy
-      waitForTaskToShowUp()
-      # SSH into the machine
-      if @commands[0] == 'ssh'
-        puts " Opening a shell to ".light_blue+@projectName.yellow+" (root@#{@ip}:#{@port}), please wait a moment...".light_blue
-        cmd = "ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@#{@ip} -p #{@port}"
+    def runSsh
+      puts " Opening a shell to ".light_blue + @projectName.yellow + " (root@#{@ip}:#{@port}), please wait a moment...".light_blue
+      cmd = "ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@#{@ip} -p #{@port}"
 
-        loop do
-          stdout, stderr, status = Open3.capture3(cmd)
-          break if 0 == status # ssh was successful
-
-          # keep waiting for ssh to come online, but exit on other errors
-          unless stderr.include?("Connection refused")
-            puts stderr.red 
-            break 
-          end
-          sleep 1
-        end
-      else
-        puts " Deployed and running #{@request.data['command']} #{@request.data['arguments']}".light_green
-        print ' STDOUT'.light_cyan + ' and' + ' STDERR'.light_magenta + ":\n"
-
-        # offset (place saving) variables
-        @stdoutOffset = 0
-        @stderrOffset = 0
-        begin
-          # get most recent task state
-          # need to wait for "task_running" before we can ask for STDOUT/STDERR
-          @taskState = JSON.parse(RestClient.get "#{@uri}/api/history/task/#{@thisTask['taskId']['id']}")
-          @taskState["taskUpdates"].each do |update|
-            @taskState = update['taskState']
-          end
-          if @taskState == "TASK_FAILED"
-            @request.delete
-            exit 1
-          end
-          if @taskState == "TASK_RUNNING"
-            sleep 1
-            # print stdout
-            @stdout = JSON.parse(RestClient.get "#{@uri}/api/sandbox/#{@thisTask['taskId']['id']}/read", {params: {path: "stdout", length: 30000, offset: @stdoutOffset}})['data']
-            outLength = @stdout.bytes.to_a.size
-            if @stdout.length > 0
-              print @stdout.light_cyan
-              @stdoutOffset += outLength
-            end
-            # print stderr
-            @stderr = JSON.parse(RestClient.get "#{@uri}/api/sandbox/#{@thisTask['taskId']['id']}/read", {params: {path: "stderr", length: 30000, offset: @stderrOffset}})['data']
-            errLength = @stderr.bytes.to_a.size
-            if @stderr.length > 0
-              print @stderr.light_magenta
-              @stderrOffset += errLength
-            end
-          end
-        end until @taskState == "TASK_FINISHED"
+      # wait for sshd to come online
+      loop do
+        break if Util.port_open?(@ip, @port)
       end
 
-      @request.delete
-
-    rescue SystemExit, Interrupt
-      #deletes request if you ctrl-c
-      @request.delete
-    rescue Exception => e
-      puts " #{e.response}".red
+      system(cmd)
     end
+
+    def runCmd
+      puts " Deployed and running #{@request.data['command']} #{@request.data['arguments']}".light_green
+      print ' STDOUT'.light_cyan + ' and' + ' STDERR'.light_magenta + ":\n"
+
+      # offset (place saving) variables
+      @stdoutOffset = 0
+      @stderrOffset = 0
+      begin
+        # get most recent task state
+        # need to wait for "task_running" before we can ask for STDOUT/STDERR
+        @taskState = JSON.parse(RestClient.get "#{@uri}/api/history/task/#{@thisTask['taskId']['id']}")
+        @taskState["taskUpdates"].each do |update|
+          @taskState = update['taskState']
+        end
+        if @taskState == "TASK_FAILED"
+          @request.delete
+          exit 1
+        end
+        if @taskState == "TASK_RUNNING"
+          sleep 1
+          # print stdout
+          @stdout = JSON.parse(RestClient.get "#{@uri}/api/sandbox/#{@thisTask['taskId']['id']}/read", {params: {path: "stdout", length: 30000, offset: @stdoutOffset}})['data']
+          outLength = @stdout.bytes.to_a.size
+          if @stdout.length > 0
+            print @stdout.light_cyan
+            @stdoutOffset += outLength
+          end
+          # print stderr
+          @stderr = JSON.parse(RestClient.get "#{@uri}/api/sandbox/#{@thisTask['taskId']['id']}/read", {params: {path: "stderr", length: 30000, offset: @stderrOffset}})['data']
+          errLength = @stderr.bytes.to_a.size
+          if @stderr.length > 0
+            print @stderr.light_magenta
+            @stderrOffset += errLength
+          end
+        end
+      end until @taskState == "TASK_FINISHED"
+    end
+
   end
 end
