@@ -89,8 +89,8 @@ module Singularity
     rescue SystemExit, Interrupt
       #deletes request if you ctrl-c
       @request.delete
-    rescue Exception => e
-      puts " #{e.response}".red
+    rescue Exception
+      puts $!.red
     end
 
     protected
@@ -112,7 +112,7 @@ module Singularity
 
     def runSsh
       puts " Opening a shell to ".light_blue + @projectName.yellow + " (root@#{@ip}:#{@port}), please wait a moment...".light_blue
-      cmd = "ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@#{@ip} -p #{@port}"
+      cmd = "ssh -o LogLevel=error -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@#{@ip} -p #{@port}"
 
       # wait for sshd to come online
       loop do

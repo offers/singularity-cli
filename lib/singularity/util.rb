@@ -1,6 +1,6 @@
 module Singularity
   module Util
-    def port_open?(ip, port, seconds=1)
+    def self.port_open?(ip, port, seconds=1)
       Timeout::timeout(seconds) do
         begin
           TCPSocket.new(ip, port).close

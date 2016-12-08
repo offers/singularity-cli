@@ -49,6 +49,10 @@ module Singularity
         @runner.run
       }
       describe "#run" do
+        context "when an exception occurs" do
+          it "should output the exception message"
+        end
+
         it "should create the request" do
           expect(WebMock).to have_requested(:post, @uri+"/api/requests")
         end
