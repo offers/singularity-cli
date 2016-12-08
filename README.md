@@ -6,7 +6,7 @@
 
 ## Install
 ```
-docker pull registry.offers.net/devops/singularity:latest
+docker pull offers/singularity-cli:latest
 ```
 
 ## Env Setup
