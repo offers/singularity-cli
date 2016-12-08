@@ -1,6 +1,3 @@
-require 'socket'
-require 'timeout'
-
 module Singularity
   class Runner
     attr_accessor :request, :ip, :port
@@ -118,6 +115,7 @@ module Singularity
       # wait for sshd to come online
       loop do
         break if Util.port_open?(@ip, @port)
+        sleep 0.25
       end
 
       system(cmd)

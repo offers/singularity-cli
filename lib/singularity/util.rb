@@ -1,3 +1,6 @@
+require 'socket'
+require 'timeout'
+
 module Singularity
   module Util
     def self.port_open?(ip, port, seconds=1)
