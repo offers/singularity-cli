@@ -13,7 +13,7 @@ docker pull offers/singularity-cli:latest
 Add the following line to your ~/.bashrc:
 
 ```
-alias singularity='docker run --rm -e SINGULARITY_USER=`whoami` -v `pwd`:/pwd -v ~/.ssh:/ssh -it singularity-cli /usr/src/app/bin/singularity'
+alias singularity='docker run --rm -e SINGULARITY_USER=`whoami` -v `pwd`:/pwd -v ~/.ssh:/ssh -it offers/singularity-cli:latest /usr/src/app/bin/singularity'
 ```
 
 # Usage:
