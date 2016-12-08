@@ -91,6 +91,7 @@ module Singularity
         end
 
         context "when creating the request" do
+          it "should put the project name and tag in the id"
           it "should put the SINGULARITY_USER or shell user name in the id"
           it "should put a millisecond timestamp in the id"
         end

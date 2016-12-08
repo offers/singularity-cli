@@ -5,7 +5,6 @@ module Singularity
     def initialize(commands, uri)
       @commands = commands
       @uri = uri
-      @projectName = Dir.pwd.split('/').last
       @ip = 0
       @port = 0
       @thisTask = ''
@@ -14,6 +13,8 @@ module Singularity
       @cpus = mescaljson['cpus']
       @mem = mescaljson['mem']
       @image = mescaljson['image']
+
+      @projectName = @image.split('/').last
 
       # establish 'id', 'command', and 'args' for filling in the data hash below
       case @commands[0]
