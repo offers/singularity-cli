@@ -17,17 +17,17 @@ alias singularity='docker run --rm -e SINGULARITY_USER=`whoami` -v `pwd`:/pwd -v
 ```
 
 # Usage:
-singularity deploy <uri> <file.json> <release>
+singularity deploy &lt;uri> &lt;file.json> &lt;release>
     - deploy singularity job
 
-singularity delete <uri> <file.json>
+singularity delete &lt;uri> &lt;file.json>
     - delete singularity deploy
 
-singularity run <commands>
-    - start new container in singularity and run <commands>
+singularity run &lt;commands>
+    - start new container in singularity and run &lt;commands>
       (do this from the base project folder of the box you wish to start)
 
-singularity runx <commands>
+singularity runx &lt;commands>
     - same as "singularity run" without use of /sbin/my_init
     
 singularity ssh
