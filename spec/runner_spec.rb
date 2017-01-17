@@ -39,6 +39,24 @@ module Singularity
 
     describe "#run" do
       context 'when executing a command that fails' do
+        before {
+          @commands = ['ls', '-a']
+          @runner = Runner.new(@commands, @uri)
+          stub_get_tasks(@runner)
+          stub_get_task_state_failed(@runner)
+          stub_STDOUT_output(@runner)
+          stub_STDERR_output(@runner)
+          stub_is_paused(@runner.request, "RUNNING")
+          @exit_code = @runner.run
+        }
+
+        it "should return a failure error code" do
+          expect(@exit_code).to eq(1)
+        end
+
+        it "should delete the request after it fails" do
+          expect(WebMock).to have_requested(:delete, @uri+"/api/requests/request/"+@runner.request.data['requestId']).once
+        end
       end
 
       context 'when an exception occurs' do
@@ -77,7 +95,7 @@ module Singularity
         end
 
         it "should delete the request after complete" do
-          expect(WebMock).to have_requested(:delete, @uri+"/api/requests/request/"+@runner.request.data['requestId'])
+          expect(WebMock).to have_requested(:delete, @uri+"/api/requests/request/"+@runner.request.data['requestId']).once
         end
       end
 
@@ -108,7 +126,7 @@ module Singularity
         end
 
         it "should check if task is running" do
-          expect(WebMock).to have_requested(:get, @uri+"/api/history/task/"+@runner.request.data['requestId']).twice
+          expect(WebMock).to have_requested(:get, @uri+"/api/history/task/" + @runner.request.data['requestId']).twice
         end
 
         it "should get STDOUT and STDERR text" do
@@ -116,7 +134,7 @@ module Singularity
         end
 
         it "should delete the request after complete" do
-          expect(WebMock).to have_requested(:delete, @uri+"/api/requests/request/"+@runner.request.data['requestId']).once
+          expect(WebMock).to have_requested(:delete, @uri + "/api/requests/request/" + @runner.request.data['requestId']).once
         end
       end
 
@@ -143,7 +161,7 @@ module Singularity
         end
 
         it "should delete the request after complete" do
-          expect(WebMock).to have_requested(:delete, @uri+"/api/requests/request/"+@runner.request.data['requestId'])
+          expect(WebMock).to have_requested(:delete, @uri+"/api/requests/request/" + @runner.request.data['requestId'])
         end
       end
     end
