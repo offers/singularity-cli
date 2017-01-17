@@ -74,6 +74,7 @@ module Singularity
     end
 
     def run
+      exit_code = 0
       @request.create
       @request.deploy
       waitForTaskToShowUp()
@@ -81,15 +82,14 @@ module Singularity
       if @commands[0] == 'ssh'
         runSsh
       else
-        runCmd
+        exit_code = runCmd
       end
-
-      @request.delete
-    rescue SystemExit, Interrupt
-      #deletes request if you ctrl-c
-      @request.delete
     rescue Exception
       puts $!.red
+      exit_code = 1
+    ensure
+      @request.delete rescue nil
+      return exit_code
     end
 
     protected
@@ -122,6 +122,9 @@ module Singularity
       system(cmd)
     end
 
+    #
+    # Returns an exit code (0 for success, 1 for failure)
+    #
     def runCmd
       puts " Deployed and running #{@request.data['command']} #{@request.data['arguments']}".light_green
       print ' STDOUT'.light_cyan + ' and' + ' STDERR'.light_magenta + ":\n"
@@ -137,8 +140,7 @@ module Singularity
           @taskState = update['taskState']
         end
         if @taskState == "TASK_FAILED"
-          @request.delete
-          exit 1
+          return 1 # failure
         end
         if @taskState == "TASK_RUNNING"
           sleep 1
@@ -158,6 +160,8 @@ module Singularity
           end
         end
       end until @taskState == "TASK_FINISHED"
+
+      return 0 # success
     end
 
   end

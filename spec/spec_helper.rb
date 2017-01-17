@@ -30,6 +30,12 @@ RSpec.configure do |config|
       {:body => {"taskUpdates":[{"taskState": "TASK_FINISHED"}]}.to_json})
   end
 
+  def stub_get_task_state_failed(runner)
+    WebMock.stub_request(:get, @uri+"/api/history/task/"+runner.request.data['id']).to_return(
+      {:body => {"taskUpdates":[{"taskState": "TASK_RUNNING"}]}.to_json},
+      {:body => {"taskUpdates":[{"taskState": "TASK_FAILED"}]}.to_json})
+  end
+
   def stub_STDOUT_output(runner)
     WebMock.stub_request(:get, /.*sandbox.*stdout/).to_return({:body => {"data": "test stdout output\n"}.to_json, :headers => {"Content-Type"=> "application/json"}},{:body => {"data": ""}.to_json, :headers => {"Content-Type"=> "application/json"}})
   end

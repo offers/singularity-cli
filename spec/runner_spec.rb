@@ -37,20 +37,28 @@ module Singularity
       end
     end
 
-    context 'when executing commands on the container' do
-      before {
-        @commands = ['ls', '-a']
-        @runner = Runner.new(@commands, @uri)
-        stub_get_tasks(@runner)
-        stub_get_task_state(@runner)
-        stub_STDOUT_output(@runner)
-        stub_STDERR_output(@runner)
-        stub_is_paused(@runner.request, "RUNNING")
-        @runner.run
-      }
-      describe "#run" do
-        context "when an exception occurs" do
-          it "should output the exception message"
+    describe "#run" do
+      context 'when executing a command that fails' do
+      end
+
+      context 'when an exception occurs' do
+        it "should output the exception message"
+      end
+
+      context 'when executing successful commands on the container' do
+        before {
+          @commands = ['ls', '-a']
+          @runner = Runner.new(@commands, @uri)
+          stub_get_tasks(@runner)
+          stub_get_task_state(@runner)
+          stub_STDOUT_output(@runner)
+          stub_STDERR_output(@runner)
+          stub_is_paused(@runner.request, "RUNNING")
+          @exit_code = @runner.run
+        }
+
+        it "should return a success error code" do
+          expect(@exit_code).to eq(0)
         end
 
         it "should create the request" do
@@ -72,20 +80,19 @@ module Singularity
           expect(WebMock).to have_requested(:delete, @uri+"/api/requests/request/"+@runner.request.data['requestId'])
         end
       end
-    end
 
-    context 'when executing commands on the container' do
-      before {
-        @commands = ['runx', 'ls', '-a']
-        @runner = Runner.new(@commands, @uri)
-        stub_get_tasks(@runner)
-        stub_get_task_state(@runner)
-        stub_STDOUT_output(@runner)
-        stub_STDERR_output(@runner)
-        stub_is_paused(@runner.request, "RUNNING")
-        @runner.run
-      }
-      describe "#run" do
+      context 'when executing commands on the container' do
+        before {
+          @commands = ['runx', 'ls', '-a']
+          @runner = Runner.new(@commands, @uri)
+          stub_get_tasks(@runner)
+          stub_get_task_state(@runner)
+          stub_STDOUT_output(@runner)
+          stub_STDERR_output(@runner)
+          stub_is_paused(@runner.request, "RUNNING")
+          @runner.run
+        }
+
         it "should create the request" do
           expect(WebMock).to have_requested(:post, @uri+"/api/requests")
         end
@@ -109,21 +116,20 @@ module Singularity
         end
 
         it "should delete the request after complete" do
-          expect(WebMock).to have_requested(:delete, @uri+"/api/requests/request/"+@runner.request.data['requestId'])
+          expect(WebMock).to have_requested(:delete, @uri+"/api/requests/request/"+@runner.request.data['requestId']).once
         end
       end
-    end
 
-    context 'when SSHing into the container' do
-      before {
-        @commands = ['ssh']
-        @runner = Runner.new(@commands, @uri)
-        stub_get_tasks(@runner)
-        stub_is_paused(@runner.request, "RUNNING")
-        allow(Util).to receive(:port_open?).and_return(true)
-        @runner.run
-      }
-      describe "#run" do
+      context 'when SSHing into the container' do
+        before {
+          @commands = ['ssh']
+          @runner = Runner.new(@commands, @uri)
+          stub_get_tasks(@runner)
+          stub_is_paused(@runner.request, "RUNNING")
+          allow(Util).to receive(:port_open?).and_return(true)
+          @runner.run
+        }
+
         it "should create the request" do
           expect(WebMock).to have_requested(:post, @uri+"/api/requests")
         end

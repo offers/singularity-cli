@@ -42,7 +42,7 @@ case action
 
   when "run"
     ARGV.shift
-    Singularity::Runner.new(ARGV, uri).run
+    exit Singularity::Runner.new(ARGV, uri).run # exit w/ code
 
   when "runx"
     # this option is to skip the use of /sbin/my_init: some commands won't run correctly when both are used
