@@ -119,6 +119,7 @@ module Singularity
           it "should put the project name and tag in the id"
           it "should put the SINGULARITY_USER or shell user name in the id"
           it "should put a millisecond timestamp in the id"
+          # expect{@runner.request.data['requestId']}.to match(//)
         end
 
         it "should deploy the request" do
