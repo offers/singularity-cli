@@ -11,7 +11,7 @@ end
 module Singularity
   describe Runner do
     before(:each) {
-      allow(File).to receive(:read).with('.mescal.json').and_return('{"image":"registry.example.com:r01","sshCmd":"/home/user/bootstrap-sshd.sh","cpus":1,"mem":512.0}')
+      allow(File).to receive(:read).with('.mescal.json').and_return('{"image":"registry.example.com/department/projectname:r01","sshCmd":"/home/user/bootstrap-sshd.sh","cpus":1,"mem":512.0}')
       WebMock.stub_request(:post, /.*/)
       WebMock.stub_request(:delete, /.*/)
     }
@@ -61,6 +61,11 @@ module Singularity
 
       context 'when an exception occurs' do
         it "should output the exception message"
+        # do
+        #   dbl = double
+        #   allow(dbl).to receive(:foo).and_raise("EXPLODING KITTENS!")
+        #   dbl.foo
+        # end
       end
 
       context 'when executing successful commands on the container' do
@@ -99,8 +104,9 @@ module Singularity
         end
       end
 
-      context 'when executing commands on the container' do
+      context 'when executing commands on the container as SINGULARITY_USER' do
         before {
+          ENV['SINGULARITY_USER'] = 'testuser'
           @commands = ['runx', 'ls', '-a']
           @runner = Runner.new(@commands, @uri)
           stub_get_tasks(@runner)
@@ -116,10 +122,9 @@ module Singularity
         end
 
         context "when creating the request" do
-          it "should put the project name and tag in the id"
-          it "should put the SINGULARITY_USER or shell user name in the id"
-          it "should put a millisecond timestamp in the id"
-          # expect{@runner.request.data['requestId']}.to match(//)
+          it "should put the project name, tag, SINGULARITY_USER, and timestamp in the id" do
+            expect(@runner.request.data['requestId']).to match(/projectname:r01_runx-ls--a_#{ENV['SINGULARITY_USER']}_[0-9]{10}/)
+          end
         end
 
         it "should deploy the request" do
@@ -136,6 +141,28 @@ module Singularity
 
         it "should delete the request after complete" do
           expect(WebMock).to have_requested(:delete, @uri + "/api/requests/request/" + @runner.request.data['requestId']).once
+        end
+      end
+
+      context 'when executing commands on the container as `whoami`' do
+        before {
+          ENV['SINGULARITY_USER'] = nil
+          @commands = ['runx', 'ls', '-a']
+          @runner = Runner.new(@commands, @uri)
+          stub_get_tasks(@runner)
+          stub_get_task_state(@runner)
+          stub_STDOUT_output(@runner)
+          stub_STDERR_output(@runner)
+          stub_is_paused(@runner.request, "RUNNING")
+          @runner.run
+        }
+
+        context "when creating the request" do
+          it "should put the project name, tag, username, and timestamp in the id" do
+            username = `whoami`.chomp
+            @runner.run
+            expect(@runner.request.data['requestId']).to match(/projectname:r01_runx-ls--a_#{username}_[0-9]{10}/)
+          end
         end
       end
 

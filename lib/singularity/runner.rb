@@ -21,7 +21,7 @@ module Singularity
       case @commands[0]
         when 'ssh'
           # the 'command' becomes 'run the ssh bootstrap script'
-          commandId = @projectName + '-SSH-'
+          commandId = '-SSH'
           command = "#{mescaljson['sshCmd']}"
         when 'runx'
           # if 'runx' is passed, skip use of /sbin/my_init
@@ -42,7 +42,7 @@ module Singularity
 
       # create request/deploy json data
       data = {
-        'id' => "#{commandId}#{user}-#{Time.now.to_i.to_s}",
+        'id' => "#{@projectName}_#{commandId}_#{user}_#{Time.now.to_i.to_s}",
         'command' => "#{command}",
         'resources' => {
           'memoryMb' => @mem,
