@@ -62,6 +62,8 @@ case action
         identities.each do |i|
           config.write('IdentityFile /root/.ssh/' + i + "\n")
         end
+          
+        config.close
       end
 
     end
