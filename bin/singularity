@@ -62,6 +62,8 @@ case action
             config.write('IdentityFile /root/.ssh/' + i + "\n")
           end
         end
+          
+        config.close
       end
 
     end
