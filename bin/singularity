@@ -57,10 +57,10 @@ case action
       Dir.chdir('/root/.ssh') do
         identities = Dir['*.pem'] + ['id_rsa']
 
-        config = File.open('config', 'w')
-      
-        identities.each do |i|
-          config.write('IdentityFile /root/.ssh/' + i + "\n")
+        File.open('config', 'w') do |config|
+          identities.each do |i|
+            config.write('IdentityFile /root/.ssh/' + i + "\n")
+          end
         end
       end
 
