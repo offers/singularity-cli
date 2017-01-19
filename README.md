@@ -6,7 +6,7 @@
 
 ## Requirements
  * Docker >= 1.12.1
- * ~/.ssh/ configured with the right keys
+ * ~/.ssh/ has the right keys
 
 ## Install (or update to a new version)
 ```
@@ -21,6 +21,24 @@ alias singularity='docker run --rm -e SINGULARITY_USER=`whoami` -v `pwd`:/pwd -v
 ```
 
 # Usage:
+####singularity ssh
+* start new container in singularity and SSH into it
+ - example:
+ ```
+ cd ~/yourproject
+ singularity ssh
+ ```
+ 
+ ####singularity run &lt;commands&gt;
+* start new container in singularity and run &lt;commands&gt;
+* for now, the commands (or script) must either be passed on the command line or in the container 
+ - examples:
+ ```
+ cd ~/yourproject
+ singularity run /your/script/is/here.sh args
+ singularity run ls -a | grep appname
+ ```
+ 
 ####singularity deploy &lt;uri&gt; &lt;file.json&gt; &lt;release&gt;
 * manually deploy a single singularity job
  - example:
@@ -35,15 +53,7 @@ alias singularity='docker run --rm -e SINGULARITY_USER=`whoami` -v `pwd`:/pwd -v
  ```
  singularity delete ./singularity/some-singularity-config.json
  ```
-####singularity run &lt;commands&gt;
-* start new container in singularity and run &lt;commands&gt;
-* for now, the commands (or script) must either be passed on the command line or in the container 
- - examples:
- ```
- cd ~/yourproject
- singularity run /your/script/is/here.sh args
- singularity run ls -a | grep appname
- ```
+ 
 ####singularity runx &lt;commands&gt;
 * same as "singularity run" without use of /sbin/my_init
 * generally don't use this command, it is just here in case /sbin/my_init gives you problems
@@ -52,18 +62,13 @@ alias singularity='docker run --rm -e SINGULARITY_USER=`whoami` -v `pwd`:/pwd -v
  cd ~/yourproject
  singularity runx /your/script/is/here.sh args
  ```
-####singularity ssh
-* start new container in singularity and SSH into it
- - example:
- ```
- cd ~/yourproject
- singularity ssh
- ```
+ 
 # Creation of a new project:
 If you want to create a new project that uses this tool's functionality you must create the files `.mescal.json` and `mesos-deploy.yml` in the base project directory. Use another project's files as a template and fill in the values for your new project.
 
 # Testing:
 ```
+docker-compose build
 ./test.sh
 ```
 
