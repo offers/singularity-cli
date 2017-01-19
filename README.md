@@ -10,14 +10,14 @@
 
 ## Install (or update to a new version)
 ```
-docker pull offers/singularity-cli:latest
+docker pull registry.offers.net/devops/singularity-cli:latest
 ```
 
 ## Env Setup
 Add the following line to your ~/.bashrc:
 
 ```
-alias singularity='docker run --rm -e SINGULARITY_USER=`whoami` -v `pwd`:/pwd -v ~/.ssh:/ssh -it offers/singularity-cli:latest /usr/src/app/bin/singularity'
+alias singularity='docker run --rm -e SINGULARITY_USER=`whoami` -v `pwd`:/pwd -v ~/.ssh:/ssh -it registry.offers.net/devops/singularity-cli:latest /usr/src/app/bin/singularity'
 ```
 
 # Usage:
