@@ -53,6 +53,18 @@ case action
     if Dir.exists?('/ssh')
       FileUtils.copy_entry '/ssh', '/root/.ssh'
       FileUtils.chown_R 'root', 'root', '/root/.ssh'
+
+      Dir.chdir('/root/.ssh') do
+        identities = Dir['*.pem'] + ['id_rsa']
+
+        File.open('config', 'w') do |config|
+          identities.each do |i|
+            config.write('IdentityFile /root/.ssh/' + i + "\n")
+          end
+        end
+
+      end
+
     end
     Singularity::Runner.new(ARGV, uri).run
 

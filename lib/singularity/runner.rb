@@ -15,13 +15,13 @@ module Singularity
       @image = mescaljson['image']
 
       @projectName = @image.split('/').last
+      user = (ENV['SINGULARITY_USER'] || `whoami`).chomp
 
       # establish 'id', 'command', and 'args' for filling in the data hash below
       case @commands[0]
         when 'ssh'
           # the 'command' becomes 'run the ssh bootstrap script'
-          user = (ENV['SINGULARITY_USER'] || `whoami`).chomp
-          commandId = @projectName + '-SSH-' + user + '-' + Time.now.to_i.to_s
+          commandId = 'SSH'
           command = "#{mescaljson['sshCmd']}"
         when 'runx'
           # if 'runx' is passed, skip use of /sbin/my_init
@@ -42,7 +42,7 @@ module Singularity
 
       # create request/deploy json data
       data = {
-        'id' => "#{commandId}",
+        'id' => "#{@projectName}_#{commandId}_#{user}_#{Time.now.to_i.to_s}",
         'command' => "#{command}",
         'resources' => {
           'memoryMb' => @mem,
