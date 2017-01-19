@@ -21,7 +21,7 @@ module Singularity
       case @commands[0]
         when 'ssh'
           # the 'command' becomes 'run the ssh bootstrap script'
-          commandId = '-SSH'
+          commandId = 'SSH'
           command = "#{mescaljson['sshCmd']}"
         when 'runx'
           # if 'runx' is passed, skip use of /sbin/my_init
