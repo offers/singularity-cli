@@ -29,7 +29,7 @@ alias singularity='docker run --rm -e SINGULARITY_USER=`whoami` -v `pwd`:/pwd -v
  singularity ssh
  ```
  
- ####singularity run &lt;commands&gt;
+####singularity run &lt;commands&gt;
 * start new container in singularity and run &lt;commands&gt;
 * for now, the commands (or script) must either be passed on the command line or in the container 
  - examples:
