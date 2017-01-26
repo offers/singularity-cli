@@ -11,9 +11,6 @@ def print_usage
 #       - delete singularity job
 #    singularity run <commands>
 #       - start new instance in singularity and run <commands>
-#    singularity runx <commands>
-#       - use this if "singularity run" fails
-#       - same as "singularity run", but skips /sbin/my_init
 #    singularity ssh
 #       - start new box in singularity and SSH into it
 END
@@ -21,7 +18,12 @@ end
 
 action = ARGV[0]
 
-File.file?('mesos-deploy.yml') and File.file?('.mescal.json') or puts 'Please do this command from a project directory (where both mesos-deploy.yml and .mescal.json exist).'
+
+unless File.exist?('mesos-deploy.yml') and File.exist?('.mescal.json')
+  puts 'Please do this command from a project directory (where both mesos-deploy.yml and .mescal.json exist).'.red
+  print_usage
+  exit
+end
 
 uri = YAML.load_file(File.join(Dir.pwd, 'mesos-deploy.yml'))['singularity_url']
 
@@ -54,6 +56,7 @@ case action
       FileUtils.copy_entry '/ssh', '/root/.ssh'
       FileUtils.chown_R 'root', 'root', '/root/.ssh'
 
+      # create & populate ssh config file
       Dir.chdir('/root/.ssh') do
         identities = []
 
@@ -73,7 +76,9 @@ case action
         end
 
       end
-
+    else
+      puts "Your ~/.ssh directory did not successfully mount in the docker image that this command runs."
+      exit
     end
     Singularity::Runner.new(ARGV, uri).run
 
