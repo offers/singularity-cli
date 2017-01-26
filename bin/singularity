@@ -55,12 +55,21 @@ case action
       FileUtils.chown_R 'root', 'root', '/root/.ssh'
 
       Dir.chdir('/root/.ssh') do
-        identities = Dir['*.pem'] + ['id_rsa']
+        identities = []
+
+        Dir.entries('/root/.ssh').reject{|e| e =~ /^\.{1,2}$/}.each do |entry|
+          File.open(entry, 'r') do |f|
+            if f.read.include? 'BEGIN RSA PRIVATE KEY'
+              identities.push entry
+            end
+          end
+        end
 
         File.open('config', 'w') do |config|
           identities.each do |i|
             config.write('IdentityFile /root/.ssh/' + i + "\n")
           end
+          config.write("Host *\n\tServerAliveInterval 60\n\tTCPKeepAlive yes")
         end
 
       end
