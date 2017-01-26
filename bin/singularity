@@ -58,14 +58,8 @@ case action
 
       # create & populate ssh config file
       Dir.chdir('/root/.ssh') do
-        identities = []
-
-        Dir.entries('/root/.ssh').reject{|e| e =~ /^\.{1,2}$/}.each do |entry|
-          File.open(entry, 'r') do |f|
-            if f.read.include? 'BEGIN RSA PRIVATE KEY'
-              identities.push entry
-            end
-          end
+        identities = (Dir['*'] - ['.', '..']).select do |entry|
+          open(entry).read.include?('BEGIN RSA PRIVATE KEY')
         end
 
         File.open('config', 'w') do |config|
