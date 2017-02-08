@@ -1,0 +1,4 @@
+{  
+  "name":"singularity",
+  "dockerArgs":"-it -e SINGULARITY_USER=`whoami` -v `pwd`:/pwd -v ~/.ssh:/ssh"
+}
