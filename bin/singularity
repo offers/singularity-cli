@@ -75,6 +75,9 @@ case action
     end
     Singularity::Runner.new(ARGV, uri).run
 
+  when "help"
+    print_usage
+
   else
     puts "Invalid subcommand '#{action}'"
     print_usage

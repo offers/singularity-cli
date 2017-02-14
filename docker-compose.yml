@@ -1,6 +1,7 @@
 app:
   build: .
   volumes:
-  - .:/usr/src/app
-  working_dir: /usr/src/app
-  command: bundle exec rspec
+  - .:/app
+  working_dir: /app
+  command: exec rspec
+  entrypoint: /usr/local/bin/bundle
