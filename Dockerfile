@@ -6,7 +6,7 @@ RUN mkdir -p /app
 RUN mkdir -p /pwd
 WORKDIR /app
 
-RUN apk add --update alpine-sdk
+RUN apk add --update g++ make openssh
 
 COPY Gemfile /app/
 COPY Gemfile.lock /app/
