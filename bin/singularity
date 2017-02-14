@@ -18,7 +18,6 @@ end
 
 action = ARGV[0]
 
-
 unless File.exist?('mesos-deploy.yml') and File.exist?('.mescal.json')
   puts 'Please do this command from a project directory (where both mesos-deploy.yml and .mescal.json exist).'.red
   print_usage
@@ -77,6 +76,7 @@ case action
     Singularity::Runner.new(ARGV, uri).run
 
   else
+    puts "Invalid subcommand '#{action}'"
     print_usage
 
 end
