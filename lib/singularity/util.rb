@@ -3,6 +3,7 @@ require 'timeout'
 
 module Singularity
   module Util
+
     def self.port_open?(ip, port, seconds=1)
       Timeout::timeout(seconds) do
         begin
@@ -15,5 +16,11 @@ module Singularity
     rescue Timeout::Error
       false
     end
+
+    def self.list_ssh()
+
+
+    end
+
   end
 end
