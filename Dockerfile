@@ -6,7 +6,7 @@ RUN mkdir -p /app
 RUN mkdir -p /pwd
 WORKDIR /app
 
-RUN apk add --update g++ make openssh
+RUN apk add --update g++ make openssh-client
 
 COPY Gemfile /app/
 COPY Gemfile.lock /app/
