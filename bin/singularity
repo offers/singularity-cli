@@ -76,7 +76,7 @@ case action
     Singularity::Runner.new(ARGV, uri).run
 
   when "list-ssh"
-    Singularity::Util.new.list_ssh
+    Singularity::Request.new(nil, uri, nil).list_ssh
 
   when "help"
     print_usage

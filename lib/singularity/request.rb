@@ -24,6 +24,10 @@ module Singularity
       puts ' Deleted request: '.red + "#{@data['requestId']||@data['id']}".light_blue
     end
 
+    def list_ssh
+      RestClient.get "#{@uri}/api/tasks/active", @data.to_json, :content_type => :json
+    end
+
     # deploys a request in singularity
     def deploy
       if is_paused

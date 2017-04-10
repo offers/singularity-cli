@@ -17,10 +17,5 @@ module Singularity
       false
     end
 
-    def self.list_ssh()
-
-
-    end
-
   end
 end
