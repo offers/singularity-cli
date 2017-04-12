@@ -25,7 +25,18 @@ module Singularity
     end
 
     def list_ssh
-      RestClient.get "#{@uri}/api/tasks/active", @data.to_json, :content_type => :json
+      tasks = JSON.parse(RestClient.get "#{@uri}/api/tasks/active", :content_type => :json)
+
+      tasks.each do |entry|
+        taskId = entry['taskRequest']['request']['id']
+        if taskId.include?("SSH")
+          ip = entry['offer']['url']['address']['ip']
+          port = entry['mesosTask']['container']['docker']['portMappings'][0]['hostPort']
+
+          puts "#{taskId}: ".light_blue + "root".yellow + " @ ".light_blue + "#{ip}".light_magenta + " : ".light_blue + "#{port}".light_cyan
+        end
+      end
+
     end
 
     # deploys a request in singularity

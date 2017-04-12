@@ -70,7 +70,7 @@ case action
 
       end
     else
-      puts "Your ~/.ssh directory did not successfully mount in the docker image that this command runs."
+      puts "Your ~/.ssh directory did not successfully mount in the docker image that this command runs in."
       exit
     end
     Singularity::Runner.new(ARGV, uri).run
