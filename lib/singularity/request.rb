@@ -25,10 +25,10 @@ module Singularity
     end
 
     def list_ssh
-      tasks = JSON.parse(RestClient.get "#{@uri}/api/tasks/active", :content_type => :json)
+      activeTasksList = JSON.parse(RestClient.get "#{@uri}/api/tasks/active", :content_type => :json)
 
       count = 1
-      tasks.each do |entry|
+      activeTasksList.each do |entry|
         taskId = entry['taskRequest']['request']['id']
         if taskId.include?("SSH")
           ip = entry['offer']['url']['address']['ip']
@@ -39,45 +39,50 @@ module Singularity
         end
       end
 
-      puts "Would you like to (k)ill or (c)onnect to any of these sessions? (n or Ctrl+C to exit) "
-      resp = 'x'
+      puts "Would you like to (k)ill or (c)onnect to any of these sessions? (x to exit) "
+      resp = ' '
 
-      while !['n','k','kill','c','con','conn','connect'].include?(resp)
-        resp = gets
+      while !['x','k','kill','c','con','conn','connect'].include?(resp)
+        resp = gets.chomp
       end
 
       case resp
-        when 'n'
-          message = RestClient.get "http://bit.ly/2p9K3sI"
-          message = message.chop.chop.chop + "\""
-          puts RestClient.get "http://bit.ly/2otyRsW", :message => "#{message}", :format => "text"
+        when 'x'
+          exit 0
         when 'k','kill'
-
+          puts 'Please enter a comma-separated list of which numbers from the above list you would like to kill (or x to exit)'
+          killList = gets.chomp
+          if killList == 'x'
+            exit 0
+          end
+          killList = killList.delete(' ').split(',')
+          killList.each do |task_index|
+            thisTask = activeTasksList[task_index.to_i-1]
+            puts '!! '.red + 'Are you sure you want to KILL ' + "#{taskId}}".red + '? (y/n)' + ' !!'.red
+            if gets.chomp == 'y'
+              RestClient.delete "#{@uri}/api/requests/request/#{thisTask['taskId']['requestId']}"
+              puts ' KILLED and DELETED: '.red + "#{thisTask['taskId']['requestId']}".light_blue
+            end
+          end
         when 'c','con','conn','connect'
-          # please enter the session number
-
-      #   # wrap the below in error checking
-      #   num = gets.to_i
-
-
+          num = 0
+          while num <= 0
+            puts 'Please enter session number from the above list (or x to exit)'
+            num = gets.chomp
+            num == 'x' ? (exit 0) : (num = Integer(num))
+          end
+          puts "SSH into #{activeTasksList[num-1]['taskId']['requestId']} (y/n)?"
+            if gets.chomp == 'y'
+              Singularity::Runner.new()
       #   while resp != (y|n)
-      #     puts "SSH into <> (y/n)?"
-      #     resp = getc
+      #     resp = gets.chomp
       #   end
       #  if resp == "y"
       #   Singularity::Runner ->ssh
       #  else
       # end
 
-      # if (k)
-      #   please enter a comma-separated list of which numbers you'd like to kill
-      #   list = gets
-      #   list = list.remove(" ").split(",")
-      #   list.each do |process_index|
-      #     tasks[process_index-1]
-      #     "!!".red + " Are you sure you want to KILL " + "#{taskId}}".red + "?" + "!!".red
-      #   end
-      # end
+
 
     end
 
