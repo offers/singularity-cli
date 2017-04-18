@@ -47,64 +47,87 @@ module Singularity
       end
 
       case resp
-        when 'x'
+      when 'x'
+        puts 'Exiting...'
+        exit 0
+      when 'k','kill'
+        puts 'Please enter a comma-separated list of which numbers from the above list you would like to kill (or x to exit)'
+        killList = gets.chomp
+        if killList == 'x'
           exit 0
-        when 'k','kill'
-          puts 'Please enter a comma-separated list of which numbers from the above list you would like to kill (or x to exit)'
-          killList = gets.chomp
-          if killList == 'x'
+        end
+        killList = killList.delete(' ').split(',')
+        killList.each do |task_index|
+          thisTask = activeTasksList[task_index.to_i-1]
+          puts '!! '.red + 'Are you sure you want to KILL ' + "#{taskId}}".red + '? (y/n)' + ' !!'.red
+          if gets.chomp == 'y'
+            RestClient.delete "#{@uri}/api/requests/request/#{thisTask['taskId']['requestId']}"
+            puts ' KILLED and DELETED: '.red + "#{thisTask['taskId']['requestId']}".light_blue
+          end
+        end
+      when 'c','con','conn','connect'
+        taskIndex = -1
+
+        def getTaskIndex
+          n = 0
+          while n <= 0
+            puts 'Please enter session number to SSH into from the above list (or x to exit)'
+            n = gets.chomp
+            n == 'x' ? (puts "Exiting..."; exit 0) : (n = Integer(n))
+          end
+          return n-1
+        end
+
+        def pickTask
+          taskIndex = getTaskIndex
+
+          puts "SSH into #{activeTasksList[taskIndex]['taskId']['requestId']}? (y = yes, p = pick another task number, or x = exit)"
+          input = gets.chomp
+
+          case input
+          when 'x'
+            puts "Exiting..."
             exit 0
+          when 'p'
+            pickTask
+          when 'y'
+            puts "Just a moment... connecting you to the instance."
+          else
+            puts "Please enter: y, p, or x"
           end
-          killList = killList.delete(' ').split(',')
-          killList.each do |task_index|
-            thisTask = activeTasksList[task_index.to_i-1]
-            puts '!! '.red + 'Are you sure you want to KILL ' + "#{taskId}}".red + '? (y/n)' + ' !!'.red
-            if gets.chomp == 'y'
-              RestClient.delete "#{@uri}/api/requests/request/#{thisTask['taskId']['requestId']}"
-              puts ' KILLED and DELETED: '.red + "#{thisTask['taskId']['requestId']}".light_blue
-            end
-          end
-        when 'c','con','conn','connect'
-          num = 0
-          while num <= 0
-            puts 'Please enter session number from the above list (or x to exit)'
-            num = gets.chomp
-            num == 'x' ? (exit 0) : (num = Integer(num))
-          end
-          puts "SSH into #{activeTasksList[num-1]['taskId']['requestId']} (y/n)?"
-            if gets.chomp == 'y'
-              Singularity::Runner.new()
-      #   while resp != (y|n)
-      #     resp = gets.chomp
-      #   end
-      #  if resp == "y"
-      #   Singularity::Runner ->ssh
-      #  else
-      # end
+        end
 
+        pickTask
 
-
-    end
-
-    # deploys a request in singularity
-    def deploy
-      if is_paused
-        puts ' PAUSED, SKIPPING.'
-        return
-      else
-        @data['requestId'] = @data['id']
-        @data['id'] = "#{@release}.#{Time.now.to_i}"
-        @data['containerInfo']['docker']['image'] = "#{JSON.parse(File.read('.mescal.json'))['image'].split(':').first}:#{@release}"
-        @deploy = {
-         'deploy' => @data,
-         'user' => `whoami`.chomp,
-         'unpauseOnSuccessfulDeploy' => false
-        }
-        # deploy the request
-        RestClient.post "#{@uri}/api/deploys", @deploy.to_json, :content_type => :json
-        puts ' Deploy succeeded: '.green + @data['requestId'].light_blue
+        # create fresh Runner, which normally creates a new request when it runs
+        # so we assign values to it to "turn it into" our currently running SSH task
+        runner = Singularity::Runner.new('ssh', @uri)
+        runner.thisIsANewRequest = false # so that we don't create & deploy a new request
+        runner.thisTask = activeTasksList[taskIndex]
+        runner.projectName = activeTasksList[taskIndex]['taskId']['requestId']
+        # then run it
+        runner.run
       end
     end
+  end
 
+  # deploys a request in singularity
+  def deploy
+    if is_paused
+      puts ' PAUSED, SKIPPING.'
+      return
+    else
+      @data['requestId'] = @data['id']
+      @data['id'] = "#{@release}.#{Time.now.to_i}"
+      @data['containerInfo']['docker']['image'] = "#{JSON.parse(File.read('.mescal.json'))['image'].split(':').first}:#{@release}"
+      @deploy = {
+        'deploy' => @data,
+        'user' => `whoami`.chomp,
+        'unpauseOnSuccessfulDeploy' => false
+      }
+      # deploy the request
+      RestClient.post "#{@uri}/api/deploys", @deploy.to_json, :content_type => :json
+      puts ' Deploy succeeded: '.green + @data['requestId'].light_blue
+    end
   end
 end

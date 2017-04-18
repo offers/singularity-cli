@@ -1,6 +1,6 @@
 module Singularity
   class Runner
-    attr_accessor :request, :ip, :port
+    attr_accessor :request, :ip, :port, :thisIsANewRequest, :thisTask, :projectName
 
     def initialize(commands, uri)
       @commands = commands
@@ -8,6 +8,7 @@ module Singularity
       @ip = 0
       @port = 0
       @thisTask = ''
+      @thisIsANewRequest = true
 
       mescaljson = JSON.parse(File.read('.mescal.json'))
       @cpus = mescaljson['cpus']
@@ -75,9 +76,12 @@ module Singularity
 
     def run
       exit_code = 0
-      @request.create
-      @request.deploy
-      waitForTaskToShowUp()
+      if @thisIsANewRequest
+        @request.create
+        @request.deploy
+        waitForTaskToShowUp
+      end
+      getIPAndPort
 
       if @commands[0] == 'ssh'
         runSsh
@@ -105,6 +109,9 @@ module Singularity
           end
         end
       end until @thisTask != ''
+    end
+
+    def getIPAndPort
       @ip = @thisTask['offer']['url']['address']['ip']
       @port = @thisTask['mesosTask']['container']['docker']['portMappings'][0]['hostPort']
     end
