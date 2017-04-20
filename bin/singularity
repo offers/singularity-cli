@@ -76,18 +76,13 @@ case action
     Singularity::Runner.new(ARGV, uri).run
 
   when "list-ssh"
-    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    #
-    # this has to change, need @data for ssh?
-    #
-    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     Singularity::Request.new(nil, uri, nil).list_ssh
 
   when "help"
     print_usage
 
   else
-    puts "Invalid subcommand '#{action}'"
+    puts "Invalid subcommand \'#{action}\'"
     print_usage
 
 end

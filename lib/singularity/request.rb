@@ -24,31 +24,58 @@ module Singularity
       puts ' Deleted request: '.red + "#{@data['requestId']||@data['id']}".light_blue
     end
 
+    # deploys a request in singularity
+    def deploy
+      if is_paused
+        puts ' PAUSED, SKIPPING.'
+        return
+      else
+        @data['requestId'] = @data['id']
+        @data['id'] = "#{@release}.#{Time.now.to_i}"
+        @data['containerInfo']['docker']['image'] = "#{JSON.parse(File.read('.mescal.json'))['image'].split(':').first}:#{@release}"
+        @deploy = {
+          'deploy' => @data,
+          'user' => `whoami`.chomp,
+          'unpauseOnSuccessfulDeploy' => false
+        }
+        # deploy the request
+        RestClient.post "#{@uri}/api/deploys", @deploy.to_json, :content_type => :json
+        puts ' Deploy succeeded: '.green + @data['requestId'].light_blue
+      end
+    end
+
     def list_ssh
       activeTasksList = JSON.parse(RestClient.get "#{@uri}/api/tasks/active", :content_type => :json)
 
-      count = 1
+      count = 0
       activeTasksList.each do |entry|
         taskId = entry['taskRequest']['request']['id']
         if taskId.include?("SSH")
           ip = entry['offer']['url']['address']['ip']
           port = entry['mesosTask']['container']['docker']['portMappings'][0]['hostPort']
 
-          puts "#{count}: ".light_green + "#{taskId}: ".light_blue + "root".yellow + " @ ".light_blue + "#{ip}".light_magenta + " : ".light_blue + "#{port}".light_cyan
+          puts "#{count+1}: ".light_green + "#{taskId}: ".light_blue + "root".yellow + " @ ".light_blue + "#{ip}".light_magenta + " : ".light_blue + "#{port}".light_cyan
           count = count + 1
         end
       end
 
-      puts "Would you like to (k)ill or (c)onnect to any of these sessions? (x to exit) "
+      if !count
+        puts "There were no running SSH sessions on #{@uri}"
+        exit 0
+      end
+
       resp = ' '
+      puts "Would you like to (k)ill or (c)onnect to any of these sessions? (x to exit)"
+      resp = gets.chomp
 
       while !['x','k','kill','c','con','conn','connect'].include?(resp)
+        puts "Incorrect input, please enter c, k, or x"
         resp = gets.chomp
       end
 
       case resp
       when 'x'
-        puts 'Exiting...'
+        puts 'Exiting...'.light_magenta
         exit 0
       when 'k','kill'
         puts 'Please enter a comma-separated list of which numbers from the above list you would like to kill (or x to exit)'
@@ -84,6 +111,11 @@ module Singularity
           puts "SSH into #{activeTasksList[taskIndex]['taskId']['requestId']}? (y = yes, p = pick another task number, or x = exit)"
           input = gets.chomp
 
+          while !["x","y","p"].include?(input)
+            puts "Please enter: y, p, or x"
+            input = gets.chomp
+          end
+
           case input
           when 'x'
             puts "Exiting..."
@@ -92,9 +124,8 @@ module Singularity
             pickTask
           when 'y'
             puts "Just a moment... connecting you to the instance."
-          else
-            puts "Please enter: y, p, or x"
           end
+
         end
 
         pickTask
@@ -105,29 +136,9 @@ module Singularity
         runner.thisIsANewRequest = false # so that we don't create & deploy a new request
         runner.thisTask = activeTasksList[taskIndex]
         runner.projectName = activeTasksList[taskIndex]['taskId']['requestId']
-        # then run it
+        # then run it, which only does getIPAndPort and runSsh
         runner.run
       end
-    end
-  end
-
-  # deploys a request in singularity
-  def deploy
-    if is_paused
-      puts ' PAUSED, SKIPPING.'
-      return
-    else
-      @data['requestId'] = @data['id']
-      @data['id'] = "#{@release}.#{Time.now.to_i}"
-      @data['containerInfo']['docker']['image'] = "#{JSON.parse(File.read('.mescal.json'))['image'].split(':').first}:#{@release}"
-      @deploy = {
-        'deploy' => @data,
-        'user' => `whoami`.chomp,
-        'unpauseOnSuccessfulDeploy' => false
-      }
-      # deploy the request
-      RestClient.post "#{@uri}/api/deploys", @deploy.to_json, :content_type => :json
-      puts ' Deploy succeeded: '.green + @data['requestId'].light_blue
     end
   end
 end
