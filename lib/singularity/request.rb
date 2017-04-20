@@ -66,11 +66,11 @@ module Singularity
 
       resp = ' '
       puts "Would you like to (k)ill or (c)onnect to any of these sessions? (x to exit)"
-      resp = gets.chomp
+      resp = STDIN.gets.chomp
 
       while !['x','k','kill','c','con','conn','connect'].include?(resp)
         puts "Incorrect input, please enter c, k, or x"
-        resp = gets.chomp
+        resp = STDIN.gets.chomp
       end
 
       case resp
@@ -79,7 +79,7 @@ module Singularity
         exit 0
       when 'k','kill'
         puts 'Please enter a comma-separated list of which numbers from the above list you would like to kill (or x to exit)'
-        killList = gets.chomp
+        killList = STDIN.gets.chomp
         if killList == 'x'
           exit 0
         end
@@ -87,7 +87,7 @@ module Singularity
         killList.each do |task_index|
           thisTask = activeTasksList[task_index.to_i-1]
           puts '!! '.red + 'Are you sure you want to KILL ' + "#{taskId}}".red + '? (y/n)' + ' !!'.red
-          if gets.chomp == 'y'
+          if STDIN.gets.chomp == 'y'
             RestClient.delete "#{@uri}/api/requests/request/#{thisTask['taskId']['requestId']}"
             puts ' KILLED and DELETED: '.red + "#{thisTask['taskId']['requestId']}".light_blue
           end
@@ -99,7 +99,7 @@ module Singularity
           n = 0
           while n <= 0
             puts 'Please enter session number to SSH into from the above list (or x to exit)'
-            n = gets.chomp
+            n = STDIN.gets.chomp
             n == 'x' ? (puts "Exiting..."; exit 0) : (n = Integer(n))
           end
           return n-1
@@ -109,11 +109,11 @@ module Singularity
           taskIndex = getTaskIndex
 
           puts "SSH into #{activeTasksList[taskIndex]['taskId']['requestId']}? (y = yes, p = pick another task number, or x = exit)"
-          input = gets.chomp
+          input = STDIN.gets.chomp
 
           while !["x","y","p"].include?(input)
             puts "Please enter: y, p, or x"
-            input = gets.chomp
+            input = STDIN.gets.chomp
           end
 
           case input
