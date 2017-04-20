@@ -47,6 +47,8 @@ module Singularity
     def list_ssh
       activeTasksList = JSON.parse(RestClient.get "#{@uri}/api/tasks/active", :content_type => :json)
 
+      taskId = ''
+
       count = 0
       activeTasksList.each do |entry|
         taskId = entry['taskRequest']['request']['id']
@@ -59,12 +61,11 @@ module Singularity
         end
       end
 
-      if !count
-        puts "There were no running SSH sessions on #{@uri}"
+      if count == 0
+        puts "There were no running SSH sessions on #{@uri.split("/")[1]}"
         exit 0
       end
 
-      resp = ' '
       puts "Would you like to (k)ill or (c)onnect to any of these sessions? (x to exit)"
       resp = STDIN.gets.chomp
 
@@ -86,7 +87,7 @@ module Singularity
         killList = killList.delete(' ').split(',')
         killList.each do |task_index|
           thisTask = activeTasksList[task_index.to_i-1]
-          puts '!! '.red + 'Are you sure you want to KILL ' + "#{taskId}}".red + '? (y/n)' + ' !!'.red
+          puts '!! '.red + 'Are you sure you want to KILL ' + "#{thisTask['taskId']['requestId']}".red + '? (y/n)' + ' !!'.red
           if STDIN.gets.chomp == 'y'
             RestClient.delete "#{@uri}/api/requests/request/#{thisTask['taskId']['requestId']}"
             puts ' KILLED and DELETED: '.red + "#{thisTask['taskId']['requestId']}".light_blue
