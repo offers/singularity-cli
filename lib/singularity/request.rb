@@ -62,7 +62,7 @@ module Singularity
       end
 
       if count == 0
-        puts "There were no running SSH sessions on #{@uri.split("/")[1]}"
+        puts "There were no running SSH sessions on #{@uri}"
         exit 0
       end
 
