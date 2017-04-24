@@ -101,7 +101,7 @@ module Singularity
           while n <= 0
             puts 'Please enter session number to SSH into from the above list (or x to exit)'
             n = STDIN.gets.chomp
-            n == 'x' ? (puts "Exiting..."; exit 0) : (n = Integer(n))
+            n == 'x' ? (puts "Exiting...".light_magenta; exit 0) : (n = Integer(n))
           end
           return n-1
         end
@@ -119,7 +119,7 @@ module Singularity
 
           case input
           when 'x'
-            puts "Exiting..."
+            puts "Exiting...".light_magenta
             exit 0
           when 'p'
             pickTask
