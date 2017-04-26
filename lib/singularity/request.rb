@@ -46,7 +46,7 @@ module Singularity
 
     def list_ssh
       activeTasksList = JSON.parse(RestClient.get "#{@uri}/api/tasks/active", :content_type => :json)
-
+      mySshTaskList = []
       taskId = ''
 
       count = 0
@@ -55,7 +55,7 @@ module Singularity
         if taskId.include?("SSH")
           ip = entry['offer']['url']['address']['ip']
           port = entry['mesosTask']['container']['docker']['portMappings'][0]['hostPort']
-
+          mySshTaskList.push(entry)
           puts "#{count+1}: ".light_green + "#{taskId}: ".light_blue + "root".yellow + " @ ".light_blue + "#{ip}".light_magenta + " : ".light_blue + "#{port}".light_cyan
           count = count + 1
         end
@@ -106,10 +106,10 @@ module Singularity
           return n-1
         end
 
-        def pickTask
+        def pickTask(fromList)
           taskIndex = getTaskIndex
 
-          puts "SSH into #{activeTasksList[taskIndex]['taskId']['requestId']}? (y = yes, p = pick another task number, or x = exit)"
+          puts "SSH into #{fromList[taskIndex]['taskId']['requestId']}? (y = yes, p = pick another task number, or x = exit)"
           input = STDIN.gets.chomp
 
           while !["x","y","p"].include?(input)
@@ -122,21 +122,21 @@ module Singularity
             puts "Exiting...".light_magenta
             exit 0
           when 'p'
-            pickTask
+            pickTask(fromList)
           when 'y'
             puts "Just a moment... connecting you to the instance."
           end
 
         end
 
-        pickTask
+        pickTask(mySshTaskList)
 
         # create fresh Runner, which normally creates a new request when it runs
         # so we assign values to it to "turn it into" our currently running SSH task
-        runner = Singularity::Runner.new('ssh', @uri)
+        runner = Singularity::Runner.new(['ssh'], @uri)
         runner.thisIsANewRequest = false # so that we don't create & deploy a new request
-        runner.thisTask = activeTasksList[taskIndex]
-        runner.projectName = activeTasksList[taskIndex]['taskId']['requestId']
+        runner.thisTask = mySshTaskList[taskIndex]
+        runner.projectName = mySshTaskList[taskIndex]['taskId']['requestId']
         # then run it, which only does getIPAndPort and runSsh
         runner.run
       end

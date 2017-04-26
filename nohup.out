@@ -1,5 +1,0 @@
-Command "daemon" is deprecated, and will be removed in Docker 1.16. Please run `dockerd` directly.
-time="2017-04-20T18:54:29.679030400Z" level=warning msg="[!] DON'T BIND ON ANY IP ADDRESS WITHOUT setting -tlsverify IF YOU DON'T KNOW WHAT YOU'RE DOING [!]" 
-time="2017-04-20T18:54:29.680782000Z" level=info msg="libcontainerd: new containerd process, pid: 420" 
-time="2017-04-20T18:54:30.689019600Z" level=error msg="[graphdriver] prior storage driver aufs failed: operation not permitted" 
-Error starting daemon: error initializing graphdriver: operation not permitted
