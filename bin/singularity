@@ -16,6 +16,32 @@ def print_usage
 END
 end
 
+def prepare_ssh
+  # copy the docker mounted ssh files and chown them to work inside the container
+  if Dir.exists?('/ssh')
+    FileUtils.copy_entry '/ssh', '/root/.ssh'
+    FileUtils.chown_R 'root', 'root', '/root/.ssh'
+
+    # create & populate ssh config file
+    Dir.chdir('/root/.ssh') do
+      identities = (Dir['*'] - ['.', '..']).select do |entry|
+        open(entry).read.include?('BEGIN RSA PRIVATE KEY')
+      end
+
+      File.open('config', 'w') do |config|
+        identities.each do |i|
+          config.write('IdentityFile /root/.ssh/' + i + "\n")
+        end
+        config.write("Host *\n\tServerAliveInterval 60\n\tTCPKeepAlive yes")
+      end
+
+    end
+  else
+    puts "Your ~/.ssh directory did not successfully mount in the docker image that this command runs in."
+    exit
+  end
+end
+
 action = ARGV[0]
 
 unless File.exist?('mesos-deploy.yml') and File.exist?('.mescal.json')
@@ -50,32 +76,11 @@ case action
     Singularity::Runner.new(ARGV, uri).run
 
   when "ssh"
-    # copy the docker mounted ssh files and chown them to work inside the container
-    if Dir.exists?('/ssh')
-      FileUtils.copy_entry '/ssh', '/root/.ssh'
-      FileUtils.chown_R 'root', 'root', '/root/.ssh'
-
-      # create & populate ssh config file
-      Dir.chdir('/root/.ssh') do
-        identities = (Dir['*'] - ['.', '..']).select do |entry|
-          open(entry).read.include?('BEGIN RSA PRIVATE KEY')
-        end
-
-        File.open('config', 'w') do |config|
-          identities.each do |i|
-            config.write('IdentityFile /root/.ssh/' + i + "\n")
-          end
-          config.write("Host *\n\tServerAliveInterval 60\n\tTCPKeepAlive yes")
-        end
-
-      end
-    else
-      puts "Your ~/.ssh directory did not successfully mount in the docker image that this command runs in."
-      exit
-    end
+    prepare_ssh
     Singularity::Runner.new(ARGV, uri).run
 
   when "list-ssh"
+    prepare_ssh
     Singularity::Request.new(nil, uri, nil).list_ssh
 
   when "help"

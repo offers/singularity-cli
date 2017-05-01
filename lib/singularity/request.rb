@@ -86,7 +86,7 @@ module Singularity
         end
         killList = killList.delete(' ').split(',')
         killList.each do |task_index|
-          thisTask = activeTasksList[task_index.to_i-1]
+          thisTask = mySshTaskList[task_index.to_i-1]
           puts '!! '.red + 'Are you sure you want to KILL ' + "#{thisTask['taskId']['requestId']}".red + '? (y/n)' + ' !!'.red
           if STDIN.gets.chomp == 'y'
             RestClient.delete "#{@uri}/api/requests/request/#{thisTask['taskId']['requestId']}"
