@@ -45,40 +45,68 @@ module Singularity
     end
 
     def list_ssh
-      activeTasksList = JSON.parse(RestClient.get "#{@uri}/api/tasks/active", :content_type => :json)
-      mySshTaskList = []
-      taskId = ''
+      def createSshTaskList(taskList)
+        newSshTaskList = []
+        taskList.each do |entry|
+          newSshTaskList.push{entry if entry['taskRequest']['request']['id'].include?("SSH")}
+        end
+        if !newSshTaskList.any?
+          puts "There were no running SSH sessions on #{@uri}"
+          exit 0
+        end
+        return newSshTaskList
+      end
 
-      count = 0
-      activeTasksList.each do |entry|
-        taskId = entry['taskRequest']['request']['id']
-        if taskId.include?("SSH")
-          ip = entry['offer']['url']['address']['ip']
-          port = entry['mesosTask']['container']['docker']['portMappings'][0]['hostPort']
-          mySshTaskList.push(entry)
-          puts "#{count+1}: ".light_green + "#{taskId}: ".light_blue + "root".yellow + " @ ".light_blue + "#{ip}".light_magenta + " : ".light_blue + "#{port}".light_cyan
-          count = count + 1
+      def printSshTaskList(taskList)
+        count = 0
+        taskList.each{|task|
+          puts "#{count=count+1}: ".light_green + "#{taskId}: ".light_blue + "root".yellow + " @ ".light_blue + "#{task['offer']['url']['address']['ip']}".light_magenta + " : ".light_blue + "#{task['mesosTask']['container']['docker']['portMappings'][0]['hostPort']}".light_cyan
+        }
+      end
+
+      def getTaskIndex
+        n = 0
+        while n <= 0
+          puts 'Please enter session number to SSH into from the above list (or x to exit)'
+          n = STDIN.gets.chomp
+          n == 'x' ? (puts "Exiting...".light_magenta; exit 0) : (n = Integer(n))
+        end
+        return n-1
+      end
+
+      def pickTask(fromList)
+        taskIndex = getTaskIndex
+
+        puts "SSH into #{fromList[taskIndex]['taskId']['requestId']}? (y = yes, p = pick another task number, or x = exit)"
+        input = STDIN.gets.chomp
+
+        while !["x","y","p"].include?(input)
+          puts "Please enter: y, p, or x"
+          input = STDIN.gets.chomp
+        end
+
+        case input
+        when 'x'
+          puts "Exiting...".light_magenta
+          exit 0
+        when 'p'
+          pickTask(fromList)
+        when 'y'
+          puts "Just a moment... connecting you to the instance."
         end
       end
 
-      if count == 0
-        puts "There were no running SSH sessions on #{@uri}"
-        exit 0
-      end
-
-      puts "Would you like to (k)ill or (c)onnect to any of these sessions? (x to exit)"
-      resp = STDIN.gets.chomp
-
-      while !['x','k','kill','c','con','conn','connect'].include?(resp)
-        puts "Incorrect input, please enter c, k, or x"
+      def askKillOrConnect
+        puts "Would you like to (k)ill or (c)onnect to any of these sessions? (x to exit)"
         resp = STDIN.gets.chomp
+
+        while !['x','k','kill','c','con','conn','connect'].include?(resp)
+          puts "Incorrect input, please enter c, k, or x"
+          resp = STDIN.gets.chomp
+        end
       end
 
-      case resp
-      when 'x'
-        puts 'Exiting...'.light_magenta
-        exit 0
-      when 'k','kill'
+      def killTasks
         puts 'Please enter a comma-separated list of which numbers from the above list you would like to kill (or x to exit)'
         killList = STDIN.gets.chomp
         if killList == 'x'
@@ -93,53 +121,35 @@ module Singularity
             puts ' KILLED and DELETED: '.red + "#{thisTask['taskId']['requestId']}".light_blue
           end
         end
-      when 'c','con','conn','connect'
+      end
+
+      def connectSsh
         taskIndex = -1
-
-        def getTaskIndex
-          n = 0
-          while n <= 0
-            puts 'Please enter session number to SSH into from the above list (or x to exit)'
-            n = STDIN.gets.chomp
-            n == 'x' ? (puts "Exiting...".light_magenta; exit 0) : (n = Integer(n))
-          end
-          return n-1
-        end
-
-        def pickTask(fromList)
-          taskIndex = getTaskIndex
-
-          puts "SSH into #{fromList[taskIndex]['taskId']['requestId']}? (y = yes, p = pick another task number, or x = exit)"
-          input = STDIN.gets.chomp
-
-          while !["x","y","p"].include?(input)
-            puts "Please enter: y, p, or x"
-            input = STDIN.gets.chomp
-          end
-
-          case input
-          when 'x'
-            puts "Exiting...".light_magenta
-            exit 0
-          when 'p'
-            pickTask(fromList)
-          when 'y'
-            puts "Just a moment... connecting you to the instance."
-          end
-
-        end
-
         pickTask(mySshTaskList)
-
-        # create fresh Runner, which normally creates a new request when it runs
+        # create fresh Runner, which normally creates a NEW request/task
         # so we assign values to it to "turn it into" our currently running SSH task
         runner = Singularity::Runner.new(['ssh'], @uri)
         runner.thisIsANewRequest = false # so that we don't create & deploy a new request
         runner.thisTask = mySshTaskList[taskIndex]
         runner.projectName = mySshTaskList[taskIndex]['taskId']['requestId']
-        # then run it, which only does getIPAndPort and runSsh
         runner.run
       end
+
+      mySshTaskList = createSshTaskList(JSON.parse(RestClient.get "#{@uri}/api/tasks/active", :content_type => :json))
+      printSshTaskList(mySshTaskList)
+      askKillOrConnect
+
+      case resp
+      when 'x'
+        puts 'Exiting...'.light_magenta
+        exit 0
+      when 'k','kill'
+        killTasks
+      when 'c','con','conn','connect'
+        connectSsh
+      end
+
     end
+
   end
 end
