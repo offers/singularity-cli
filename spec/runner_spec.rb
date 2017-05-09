@@ -23,6 +23,7 @@ module Singularity
         stub_get_tasks(@runner)
         @runner.request.data['requestId'] = @runner.request.data['id']
         @runner.send(:waitForTaskToShowUp)
+        @runner.send(:getIPAndPort)
       }
       it "should get the task list" do
         expect(WebMock).to have_requested(:get, @uri+'/api/tasks/active')
