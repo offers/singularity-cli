@@ -83,24 +83,5 @@ module Singularity
 
     end
 
-    describe '#list_ssh' do
-      it 'should list SSH sessions on the correct singularity url' do
-      end
-
-      it 'should tell us there are no SSH sessions when there are none' do
-      end
-
-      it 'should kill the correct SSH sessions when told to' do
-      end
-
-      it 'should connect us to the correct SSH session when told to' do
-      end
-
-      # new functionality to be added
-      it 'should ask us if we want to kill the SSH session when we exit from it' do
-      end
-
-    end
-
   end
 end
