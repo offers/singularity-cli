@@ -134,8 +134,8 @@ module Singularity
         runner.projectName = mySshTaskList[taskIndex]['taskId']['requestId']
         runner.run
       end
-
-      mySshTaskList = createSshTaskList(JSON.parse(RestClient.get "#{@uri}/api/tasks/active", :content_type => :json))
+      listOfAllActiveTasks = JSON.parse(RestClient.get "#{@uri}/api/tasks/active", :content_type => :json)
+      mySshTaskList = createSshTaskList(listOfAllActiveTasks)
       printSshTaskList(mySshTaskList)
       askKillOrConnect
 
