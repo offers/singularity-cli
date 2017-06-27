@@ -57,7 +57,7 @@ case action
 
       # create & populate ssh config file
       Dir.chdir('/root/.ssh') do
-        identities = (Dir['*'] - ['.', '..']).select do |entry|
+        identities = (Dir['**/*'].select { |f| File.file?(f) }).select do |entry|
           open(entry).read.include?('BEGIN RSA PRIVATE KEY')
         end
 
