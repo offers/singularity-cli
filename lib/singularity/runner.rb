@@ -111,7 +111,7 @@ module Singularity
 
     def runSsh
       puts " Opening a shell to ".light_blue + @projectName.yellow + " (root@#{@ip}:#{@port}), please wait a moment...".light_blue
-      cmd = "ssh -o LogLevel=error -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@#{@ip} -p #{@port}"
+      cmd = "#{(@commands.length == 2 && @commands[1] == "-v") ? 'ssh -v' : 'ssh'} -o LogLevel=error -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@#{@ip} -p #{@port}"
 
       # wait for sshd to come online
       loop do
