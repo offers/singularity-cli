@@ -8,11 +8,23 @@ module Singularity
       @ip = 0
       @port = 0
       @thisTask = ''
+      @cpus = 1
+      @mem = 512
+      @image = "none"
+      @mescaljson = []
+      @dcosdeploy = []
 
-      mescaljson = JSON.parse(File.read('.mescal.json'))
-      @cpus = mescaljson['cpus']
-      @mem = mescaljson['mem']
-      @image = mescaljson['image']
+      if File.exist?('dcos-deploy/config.yml')
+        @dcosdeploy = YAML.load_file(File.join(Dir.pwd, 'dcos-deploy/config.yml'))
+        @cpus = @dcosdeploy['cpu']
+        @mem = @dcosdeploy['mem']
+        @image = "#{@dcosdeploy['repo']}" + ":#{@dcosdeploy['tag']}"
+      else
+        @mescaljson = JSON.parse(File.read('.mescal.json'))
+        @cpus = @mescaljson['cpus']
+        @mem = @mescaljson['mem']
+        @image = @mescaljson['image']
+      end
 
       @projectName = @image.split('/').last
       user = (ENV['SINGULARITY_USER'] || `whoami`).chomp
@@ -22,7 +34,7 @@ module Singularity
         when 'ssh'
           # the 'command' becomes 'run the ssh bootstrap script'
           commandId = 'SSH'
-          command = "#{mescaljson['sshCmd']}"
+          command = File.exist?('dcos-deploy/config.yml') ? "#{@dcosdeploy['sshCmd']}" : "#{@mescaljson['sshCmd']}"
         when 'runx'
           # if 'runx' is passed, skip use of /sbin/my_init
           commandId = @commands.join('-').tr('@/\*?% []#$', '-')
@@ -115,7 +127,7 @@ module Singularity
 
       # wait for sshd to come online
       loop do
-        break if Util.port_open?(@ip, @port)
+        break if port_open?(@ip, @port)
         sleep 0.25
       end
 

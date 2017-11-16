@@ -32,7 +32,10 @@ module Singularity
       else
         @data['requestId'] = @data['id']
         @data['id'] = "#{@release}.#{Time.now.to_i}"
-        @data['containerInfo']['docker']['image'] = "#{JSON.parse(File.read('.mescal.json'))['image'].split(':').first}:#{@release}"
+        @data['containerInfo']['docker']['image'] =
+          File.exist?('dcos-deploy/config.yml') ?
+            YAML.load_file(File.join(Dir.pwd, 'dcos-deploy/config.yml'))['repo']+":#{@release}" :
+            "#{JSON.parse(File.read('.mescal.json'))['image'].split(':').first}:#{@release}"
         @deploy = {
          'deploy' => @data,
          'user' => `whoami`.chomp,
