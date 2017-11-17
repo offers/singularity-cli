@@ -28,7 +28,7 @@ end
 
 unless using_legacy_mesos_and_mescal_config or using_dcos_deploy_config
   puts 'Please do this command from a root project directory.'.red
-  puts 'You must also have either a'.red + 'dcos-deploy/'.light_blue + 'config.yml'.blue + ' or a '.red + 'mesos-deploy.yml and .mescal.json'.blue + ' in this folder.'
+  puts 'You must also have either a '.red + 'dcos-deploy/'.light_blue + 'config.yml'.blue + ' or a '.red + 'mesos-deploy.yml and .mescal.json'.blue + ' in this folder.'
   print_usage
   exit
 end

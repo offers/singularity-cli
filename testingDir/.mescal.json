@@ -1,0 +1,1 @@
+{"mescal":"mescal.ocean:8082","image":"registry.ofr.cloud/offers/orca:r608","sshCmd":"/orca/docker/sshd/bootstrap-sshd.sh","cpus":1,"mem":512.0}

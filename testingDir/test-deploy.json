@@ -1,0 +1,23 @@
+{
+    "id": "test-singularity-deploy",
+    "schedule": "0 */5 * * *",
+    "command":  "/sbin/my_init",
+    "arguments": ["--", "echo", "test-singularity-deploy"],
+    "containerInfo": {
+        "type": "DOCKER",
+        "docker": {
+            "image": "registry.ofr.cloud/offers/orca:<%= release %>",
+            "portMappings": []
+        }
+    },
+    "env": {
+        "APPLICATION_ENV": "production"
+    },
+    "resources": {
+        "cpus": 0.5,
+        "memoryMb": 256,
+        "numPorts": 0
+    },
+    "owners": ["travis.webb@offers.com"],
+    "numRetriesOnFailure": 1
+}

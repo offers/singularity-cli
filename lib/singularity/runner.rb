@@ -16,8 +16,8 @@ module Singularity
 
       if File.exist?('dcos-deploy/config.yml')
         @dcosdeploy = YAML.load_file(File.join(Dir.pwd, 'dcos-deploy/config.yml'))
-        @cpus = @dcosdeploy['cpu']
-        @mem = @dcosdeploy['mem']
+        @cpus = @dcosdeploy['singularity']['cpu']
+        @mem = @dcosdeploy['singularity']['mem']
         @image = "#{@dcosdeploy['repo']}" + ":#{@dcosdeploy['tag']}"
       else
         @mescaljson = JSON.parse(File.read('.mescal.json'))
@@ -127,7 +127,7 @@ module Singularity
 
       # wait for sshd to come online
       loop do
-        break if port_open?(@ip, @port)
+        break if Util.port_open?(@ip, @port)
         sleep 0.25
       end
 
