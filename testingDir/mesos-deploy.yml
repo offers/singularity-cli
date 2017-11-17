@@ -1,0 +1,20 @@
+repo: registry.ofr.cloud/offers/orca
+singularity_url: http://singularity.ocean.ofr.cloud/singularity
+marathon:
+  url: http://marathon.ocean.ofr.cloud
+  user: ocean
+  password: beach_head
+marathons:
+  - /orca/web
+  - /orca/jsonrpc
+  - /orca/denormalize
+  - /orca/mixpanel
+  - /orca/purchaserecorder
+  - /orca/cachie
+  - /orca/sendgrid
+  - /orca/queuelengthstats
+  - /orca/sendgrid-webhook-worker
+  - /orca/promo-email-sender
+  - /orca/promo-email-generator
+  - /orca/emailvalidation
+slack_channel: orca

@@ -18,13 +18,25 @@ end
 
 action = ARGV[0]
 
-unless File.exist?('mesos-deploy.yml') and File.exist?('.mescal.json')
-  puts 'Please do this command from a project directory (where both mesos-deploy.yml and .mescal.json exist).'.red
+def using_dcos_deploy_config
+  File.exist?('dcos-deploy/config.yml')
+end
+
+def using_legacy_mesos_and_mescal_config
+  File.exist?('mesos-deploy.yml') and File.exist?('.mescal.json')
+end
+
+unless using_legacy_mesos_and_mescal_config or using_dcos_deploy_config
+  puts 'Please do this command from a root project directory.'.red
+  puts 'You must also have either a '.red + 'dcos-deploy/'.light_blue + 'config.yml'.blue + ' or a '.red + 'mesos-deploy.yml and .mescal.json'.blue + ' in this folder.'
   print_usage
   exit
 end
 
-uri = YAML.load_file(File.join(Dir.pwd, 'mesos-deploy.yml'))['singularity_url']
+uri =
+  using_dcos_deploy_config ?
+  YAML.load_file(File.join(Dir.pwd, 'dcos-deploy/config.yml'))['singularity']['url'] :
+  YAML.load_file(File.join(Dir.pwd, 'mesos-deploy.yml'))['singularity_url']
 
 case action
   when "delete"

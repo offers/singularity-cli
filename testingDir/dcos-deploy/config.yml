@@ -1,0 +1,8 @@
+---
+repo: registry.ofr.cloud/offers/orca
+tag: r590
+singularity:
+  url: http://singularity.ocean.ofr.cloud/singularity
+  cpu: 1.0
+  mem: 512
+sshCmd: /orca/docker/sshd/bootstrap-sshd.sh
