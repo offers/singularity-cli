@@ -26,7 +26,7 @@ module Singularity
         @image = @mescaljson['image']
       end
 
-      @projectName = @image.split('/').last
+      @projectName = @image.split('/').last.tr('@/\*?% []#$:', '-')
       user = (ENV['SINGULARITY_USER'] || `whoami`).chomp
 
       # establish 'id', 'command', and 'args' for filling in the data hash below
@@ -37,7 +37,7 @@ module Singularity
           command = File.exist?('dcos-deploy/config.yml') ? "#{@dcosdeploy['sshCmd']}" : "#{@mescaljson['sshCmd']}"
         when 'runx'
           # if 'runx' is passed, skip use of /sbin/my_init
-          commandId = @commands.join('-').tr('@/\*?% []#$', '-')
+          commandId = @commands.join('-').tr('@/\*?% []#$:', '-')
           @commands.shift
           command = @commands.shift
           @args = []
@@ -45,26 +45,30 @@ module Singularity
           @commands.each { |i| @args.push i }
         else
           # else join /sbin/my_init with your commands
-          commandId = @commands.join('-').tr('@/\*?% []#$', '-')
+          commandId = @commands.join('-').tr('@/\*?% []#$:', '-')
           command = '/sbin/my_init'
           @args = ['--']
           @setargs = true
           @commands.each { |i| @args.push i }
       end
 
+      singularityId = "#{@projectName}_#{commandId}_#{user}_#{Time.now.to_i.to_s}"
       # create request/deploy json data
-      data = {
-        'id' => "#{@projectName}_#{commandId}_#{user}_#{Time.now.to_i.to_s}",
+      singularityRequest = {
+        'id' => "#{singularityId}",
+        'requestType' => 'RUN_ONCE'
+      }
+      singularityDeploy = {
+        'id' => "#{singularityId}",
         'command' => "#{command}",
+        'env' => {
+          'APPLICATION_ENV' => 'production'
+        },
         'resources' => {
           'memoryMb' => @mem,
           'cpus' => @cpus,
           'numPorts' => 1
         },
-        'env' => {
-          'APPLICATION_ENV' => 'production'
-        },
-        'requestType' => 'RUN_ONCE',
         'containerInfo' => {
           'type' => 'DOCKER',
           'docker' => {
@@ -80,9 +84,9 @@ module Singularity
         }
       }
       if @setargs
-        data['arguments'] = @args
+        singularityDeploy['arguments'] = @args
       end
-      @request = Request.new(data, @uri, @image.split(':')[1])
+      @request = Request.new(singularityRequest, singularityDeploy, @uri, @image.split(':')[1])
     end
 
     def run
@@ -110,9 +114,8 @@ module Singularity
       # repeatedly poll API for active tasks until ours shows up so we can get IP/PORT for SSH
       begin
         @tasks = JSON.parse(RestClient.get "#{@uri}/api/tasks/active", :content_type => :json)
-
         @tasks.each do |entry|
-          if entry['taskRequest']['request']['id'] == @request.data['requestId']
+          if entry['taskRequest']['request']['id'] == @request.singularityDeploy['requestId']
             @thisTask = entry
           end
         end
@@ -138,7 +141,7 @@ module Singularity
     # Returns an exit code (0 for success, 1 for failure)
     #
     def runCmd
-      puts " Deployed and running #{@request.data['command']} #{@request.data['arguments']}".light_green
+      puts " Deployed and running #{@request.singularityDeploy['command']} #{@request.singularityDeploy['arguments']}".light_green
       print ' STDOUT'.light_cyan + ' and' + ' STDERR'.light_magenta + ":\n"
 
       # offset (place saving) variables

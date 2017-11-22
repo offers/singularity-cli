@@ -1,27 +1,28 @@
 module Singularity
   class Request
-    attr_accessor :release, :cpus, :mem, :envs, :schedule, :cmd, :arguments, :request_id, :repo, :release_string, :release_id_string, :uri, :data
+    attr_accessor :release, :cpus, :mem, :envs, :schedule, :cmd, :arguments, :request_id, :repo, :release_string, :release_id_string, :uri, :singularityRequest, :singularityDeploy
 
-    def initialize(data, uri, release)
-      @data = data
+    def initialize(singularityRequest, singularityDeploy, uri, release)
+      @singularityRequest = singularityRequest
+      @singularityDeploy = singularityDeploy
       @uri = uri
       @release = release
     end
 
     # checks to see if a request is paused
     def is_paused
-      return JSON.parse(RestClient.get "#{@uri}/api/requests/request/#{@data['id']}")['state'] == 'PAUSED'
+      return JSON.parse(RestClient.get "#{@uri}/api/requests/request/#{@singularityRequest['id']}")['state'] == 'PAUSED'
     end
 
     # creates or updates a request in singularity
     def create
-      RestClient.post "#{@uri}/api/requests", @data.to_json, :content_type => :json
+      RestClient.post "#{@uri}/api/requests", @singularityRequest.to_json, :content_type => :json
     end
 
     # deletes a request in singularity
     def delete
-      RestClient.delete "#{@uri}/api/requests/request/#{@data['requestId']||@data['id']}"
-      puts ' Deleted request: '.red + "#{@data['requestId']||@data['id']}".light_blue
+      RestClient.delete "#{@uri}/api/requests/request/#{@singularityDeploy['requestId']||@singularityDeploy['id']}"
+      puts ' Deleted request: '.red + "#{@singularityDeploy['requestId']||@singularityDeploy['id']}".light_blue
     end
 
     # deploys a request in singularity
@@ -30,20 +31,20 @@ module Singularity
         puts ' PAUSED, SKIPPING.'
         return
       else
-        @data['requestId'] = @data['id']
-        @data['id'] = "#{@release}.#{Time.now.to_i}"
-        @data['containerInfo']['docker']['image'] =
+        @singularityDeploy['requestId'] = @singularityDeploy['id']
+        @singularityDeploy['id'] = "#{@release}.#{Time.now.to_i}"
+        @singularityDeploy['containerInfo']['docker']['image'] =
           File.exist?('dcos-deploy/config.yml') ?
             YAML.load_file(File.join(Dir.pwd, 'dcos-deploy/config.yml'))['repo']+":#{@release}" :
             "#{JSON.parse(File.read('.mescal.json'))['image'].split(':').first}:#{@release}"
         @deploy = {
-         'deploy' => @data,
+         'deploy' => @singularityDeploy,
          'user' => `whoami`.chomp,
          'unpauseOnSuccessfulDeploy' => false
         }
         # deploy the request
         RestClient.post "#{@uri}/api/deploys", @deploy.to_json, :content_type => :json
-        puts ' Deploy succeeded: '.green + @data['requestId'].light_blue
+        puts ' Deploy succeeded: '.green + @singularityDeploy['requestId'].light_blue
       end
     end
 

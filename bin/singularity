@@ -33,10 +33,9 @@ unless using_legacy_mesos_and_mescal_config or using_dcos_deploy_config
   exit
 end
 
-uri =
-  using_dcos_deploy_config ?
-  YAML.load_file(File.join(Dir.pwd, 'dcos-deploy/config.yml'))['singularity']['url'] :
-  YAML.load_file(File.join(Dir.pwd, 'mesos-deploy.yml'))['singularity_url']
+uri = using_dcos_deploy_config ?
+      YAML.load_file(File.join(Dir.pwd, 'dcos-deploy/config.yml'))['singularity']['url'] :
+      YAML.load_file(File.join(Dir.pwd, 'mesos-deploy.yml'))['singularity_url']
 
 case action
   when "delete"
@@ -82,7 +81,7 @@ case action
 
       end
     else
-      puts "Your ~/.ssh directory did not successfully mount in the docker image that this command runs."
+      puts "Your ~/.ssh directory did not successfully mount in the docker image that this command runs. If you are running this docker image manually, use the docker -v command to mount your ~/.ssh to /ssh in the container."
       exit
     end
     Singularity::Runner.new(ARGV, uri).run
