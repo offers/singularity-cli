@@ -34,7 +34,7 @@ module Singularity
         when 'ssh'
           # the 'command' becomes 'run the ssh bootstrap script'
           commandId = 'SSH'
-          command = File.exist?('dcos-deploy/config.yml') ? "#{@dcosdeploy['sshCmd']}" : "#{@mescaljson['sshCmd']}"
+          command = File.exist?('dcos-deploy/config.yml') ? "#{@dcosdeploy['singularity']['sshCmd']}" : "#{@mescaljson['sshCmd']}"
         when 'runx'
           # if 'runx' is passed, skip use of /sbin/my_init
           commandId = @commands.join('-').tr('@/\*?% []#$', '-')
