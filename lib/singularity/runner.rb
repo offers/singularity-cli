@@ -97,7 +97,7 @@ module Singularity
         exit_code = runCmd
       end
     rescue 
-      p $!
+      puts $!.to_s.red
       exit_code = 1
     ensure
       @request.delete rescue nil
