@@ -26,7 +26,7 @@ module Singularity
         @image = @mescaljson['image']
       end
 
-      @projectName = @image.split('/').last
+      @projectName = @image.split('/').last.gsub(':', '_')
       user = (ENV['SINGULARITY_USER'] || `whoami`).chomp
 
       # establish 'id', 'command', and 'args' for filling in the data hash below
@@ -96,8 +96,8 @@ module Singularity
       else
         exit_code = runCmd
       end
-    rescue Exception
-      puts $!.red
+    rescue 
+      p $!
       exit_code = 1
     ensure
       @request.delete rescue nil
