@@ -61,6 +61,7 @@ module Singularity
           'cpus' => @cpus,
           'numPorts' => 1
         },
+        'rackAffinity' => ['general'],
         'env' => {
           'APPLICATION_ENV' => 'production'
         },
